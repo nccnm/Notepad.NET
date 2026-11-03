@@ -14,6 +14,7 @@ internal sealed class MenuBuilder(CommandRegistry registry, ILocalizedStrings st
     private readonly ILocalizedStrings _strings = strings;
     private readonly Func<CommandContext> _context = context;
     private readonly List<(ToolStripMenuItem Item, MenuContribution Contribution)> _items = [];
+    private readonly List<(ToolStripMenuItem Item, Func<CommandContext, bool> IsEnabled)> _submenus = [];
 
     public MenuStrip Build()
     {
@@ -41,9 +42,21 @@ internal sealed class MenuBuilder(CommandRegistry registry, ILocalizedStrings st
     public void UpdateState()
     {
         var context = _context();
+        _registry.RefreshMenuState(context);
+        foreach (var (item, isEnabled) in _submenus)
+        {
+            item.Enabled = isEnabled(context);
+        }
+
         foreach (var (item, contribution) in _items)
         {
-            item.Visible = contribution.IsVisible?.Invoke(context) ?? true;
+            var visible = contribution.IsVisible?.Invoke(context) ?? true;
+            item.Visible = visible;
+            if (visible && contribution.DynamicText is { } text)
+            {
+                item.Text = text(context);
+            }
+
             item.Enabled = _registry.Find(contribution.Command)?.CanExecute(context) ?? false;
             item.Checked = contribution.IsChecked?.Invoke(context) ?? false;
         }
@@ -70,6 +83,11 @@ internal sealed class MenuBuilder(CommandRegistry registry, ILocalizedStrings st
                 var sub = new ToolStripMenuItem(_strings.GetString(menu.TextKey));
                 Fill(sub, menu.Path);
                 parent.DropDownItems.Add(sub);
+                if (menu.IsEnabled is { } isEnabled)
+                {
+                    _submenus.Add((sub, isEnabled));
+                }
+
                 continue;
             }
 

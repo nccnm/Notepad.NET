@@ -104,6 +104,7 @@ internal sealed class AppHost : IDisposable
         services.AddSingleton<ILocalizedStrings>(ResxStrings.Instance);
         services.AddSingleton<ISettingsStore, InMemorySettingsStore>();
         services.AddSingleton(sp => sp.GetRequiredService<ISettingsStore>().Load());
+        services.AddSingleton<IRecentFilesStore, InMemoryRecentFilesStore>();
         services.AddSingleton(ReadOptions());
         services.AddSingleton<ICodePageConverter, Win32CodePageConverter>();
         services.AddSingleton<IUnicodeHeuristic, Win32UnicodeHeuristic>();
@@ -181,12 +182,13 @@ internal sealed class AppHost : IDisposable
         var timeDate = new TimeDateInserter(sp.GetRequiredService<IClock>(), sp.GetRequiredService<IDateTimeFormatter>());
         var dialogs = sp.GetRequiredService<IDialogService>();
         var shell = sp.GetRequiredService<IShell>();
+        var recentFiles = new RecentFilesService(sp.GetRequiredService<IRecentFilesStore>());
         var documents = new DocumentService(
             new DocumentServiceDependencies(
                 editor, window, sp.GetRequiredService<IFileSystem>(), sp.GetRequiredService<ITextBufferFactory>(),
                 sp.GetRequiredService<EncodingDetector>(), sp.GetRequiredService<DocumentLoader>(), sp.GetRequiredService<TextEncoder>(),
                 dialogs, strings, sp.GetRequiredService<IFileTitleProvider>(), sp.GetRequiredService<ISystemErrorMessages>(),
-                sp.GetRequiredService<IFileAccessPolicy>(), shell, timeDate, statusBar),
+                sp.GetRequiredService<IFileAccessPolicy>(), shell, timeDate, statusBar, recentFiles),
             state);
         var findDialog = sp.GetRequiredService<IFindReplaceDialog>();
         var search = new SearchService(new(
@@ -197,7 +199,7 @@ internal sealed class AppHost : IDisposable
             sp.GetRequiredService<IDateTimeFormatter>(), sp.GetRequiredService<IFileTitleProvider>(), sp.GetRequiredService<ISystemErrorMessages>()));
         var context = new CommandContext(
             editor, documents, window, dialogs, sp.GetRequiredService<IClipboard>(), shell, strings, settings, statusBar, timeDate,
-            sp.GetRequiredService<AppOptions>(), search, goTo, printing);
+            sp.GetRequiredService<AppOptions>(), search, goTo, printing, recentFiles);
         var registry = BuiltInModules.CreateRegistry(modules);
         StartupTrace.Mark("Services resolved");
 

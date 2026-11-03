@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NotepadClassic.Core.Commands;
+using NotepadClassic.Core.Documents;
 using NotepadClassic.Core.Editing;
 using NotepadClassic.Core.Localization;
 using NotepadClassic.Core.Printing;
@@ -68,6 +69,7 @@ internal static class Contribution
 public sealed class FileModule : IFeatureModule
 {
     public const string Menu = "File";
+    public const string RecentMenu = "File/Recent";
 
     public void ConfigureServices(IServiceCollection services)
     {
@@ -89,8 +91,9 @@ public sealed class FileModule : IFeatureModule
         registry.Item(Menu, 0, 0, CommandId.New, "Menu_File_New", true);
         registry.Item(Menu, 0, 1, CommandId.NewWindow, "Menu_File_NewWindow", true);
         registry.Item(Menu, 0, 2, CommandId.Open, "Menu_File_Open", true);
-        registry.Item(Menu, 0, 3, CommandId.Save, "Menu_File_Save", true);
-        registry.Item(Menu, 0, 4, CommandId.SaveAs, "Menu_File_SaveAs", true);
+        AddRecentFiles(registry);
+        registry.Item(Menu, 0, 4, CommandId.Save, "Menu_File_Save", true);
+        registry.Item(Menu, 0, 5, CommandId.SaveAs, "Menu_File_SaveAs", true);
         registry.Item(Menu, 1, 0, CommandId.PageSetup, "Menu_File_PageSetup");
         registry.Item(Menu, 1, 1, CommandId.Print, "Menu_File_Print", true);
         registry.Item(Menu, 2, 0, CommandId.Exit, "Menu_File_Exit");
@@ -110,6 +113,30 @@ public sealed class FileModule : IFeatureModule
         registry.Key(KeyTier.SetupOnly, VirtualKeys.Letter('C'), Contribution.Ctrl, CommandId.Exit);
         registry.Key(KeyTier.SetupOnly, VirtualKeys.Letter('D'), Contribution.Ctrl, CommandId.Exit);
         registry.Key(KeyTier.SetupOnly, VirtualKeys.Letter('Z'), Contribution.Ctrl, CommandId.Exit);
+    }
+
+    /// <summary>The submenu under Open: one command per place in the list, hidden while that place
+    /// is empty, and Clear. The list is read again each time a menu opens, for what other windows added.</summary>
+    private static void AddRecentFiles(ICommandRegistry registry)
+    {
+        registry.AddMenu(new(RecentMenu, "Menu_File_Recent", 3, c => c.RecentFiles.Items.Count > 0));
+        registry.AddMenuRefresh(c => c.RecentFiles.Refresh());
+        for (var i = 0; i < RecentFilesPolicy.MaxCount; i++)
+        {
+            var index = i;
+            bool Exists(CommandContext c) => index < c.RecentFiles.Items.Count;
+            var id = CommandId.RecentFile1 + index;
+            registry.Command(id, c => c.Documents.OpenRecent(c.RecentFiles.Items[index]), Exists);
+            registry.AddMenuItem(new(
+                RecentMenu, 0, index, id, "Menu_File_RecentItem", IsVisible: Exists,
+                DynamicText: c => MessageText.FormatInserts(
+                    c.Strings.GetString("Menu_File_RecentItem"),
+                    RecentFilesPolicy.AccessNumber(index),
+                    RecentFilesPolicy.DisplayPath(c.RecentFiles.Items[index]))));
+        }
+
+        registry.Command(CommandId.ClearRecentFiles, c => c.RecentFiles.Clear());
+        registry.Item(RecentMenu, 1, 0, CommandId.ClearRecentFiles, "Menu_File_ClearRecent");
     }
 }
 

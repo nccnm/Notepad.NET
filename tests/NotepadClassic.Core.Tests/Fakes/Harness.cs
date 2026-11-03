@@ -24,11 +24,12 @@ internal sealed class Harness
         State = new DocumentState(Settings.DefaultEncoding);
         StatusBar = new StatusBarPresenter(StatusView, Editor, ResxStrings.Instance, () => State.CurrentEncoding);
         TimeDate = new TimeDateInserter(Clock, new FakeDateTimeFormatter());
+        RecentFiles = new RecentFilesService(RecentStore);
         Documents = new DocumentService(
             new DocumentServiceDependencies(
                 Editor, Window, Files, ManagedTextBufferFactory.Instance, detector,
                 new DocumentLoader(detector, new TextDecoder(Converter)), new TextEncoder(Converter),
-                Dialogs, ResxStrings.Instance, new FakeFileTitles(), SystemMessages, AccessPolicy, Shell, TimeDate, StatusBar),
+                Dialogs, ResxStrings.Instance, new FakeFileTitles(), SystemMessages, AccessPolicy, Shell, TimeDate, StatusBar, RecentFiles),
             State);
         Search = new SearchService(new(Editor, Settings, Searcher, FindDialog, Dialogs, StatusBar, ResxStrings.Instance, Window));
         GoTo = new GoToService(Editor, new FakeDigitFolder());
@@ -39,10 +40,14 @@ internal sealed class Harness
         Registry = BuiltInModules.CreateRegistry(BuiltInModules.All);
         Context = new CommandContext(
             Editor, Documents, Window, Dialogs, Clipboard, Shell, ResxStrings.Instance, Settings, StatusBar, TimeDate,
-            options ?? new AppOptions("https://example.invalid/help", null), Search, GoTo, Printing);
+            options ?? new AppOptions("https://example.invalid/help", null), Search, GoTo, Printing, RecentFiles);
     }
 
     public FakeEditor Editor { get; }
+
+    public InMemoryRecentFilesStore RecentStore { get; } = new();
+
+    public RecentFilesService RecentFiles { get; }
 
     public const string SessionId = "1A2B3C4D-5E6F-7a8b-9C0D-EF1234567890";
 

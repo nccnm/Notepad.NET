@@ -39,6 +39,20 @@ public enum CommandId
 
     /// <summary>Port addition (View > Always on Top); not in the original.</summary>
     AlwaysOnTop = 0x53,
+
+    /// <summary>Port addition (File > Recent Files), one per place in the list, like the rest of
+    /// the block; not in the original.</summary>
+    RecentFile1 = 0x60,
+    RecentFile2 = 0x61,
+    RecentFile3 = 0x62,
+    RecentFile4 = 0x63,
+    RecentFile5 = 0x64,
+    RecentFile6 = 0x65,
+    RecentFile7 = 0x66,
+    RecentFile8 = 0x67,
+    RecentFile9 = 0x68,
+    RecentFile10 = 0x69,
+    ClearRecentFiles = 0x6A,
     Cut = 0x300,
     Copy = 0x301,
     Paste = 0x302,
@@ -102,13 +116,16 @@ public sealed record KeyBinding(KeyChord Chord, CommandId Command, KeyTier Tier)
 
 /// <summary>A top-level menu or submenu. <paramref name="Path"/> uses <c>/</c> between levels
 /// ("View/Zoom").</summary>
-public sealed record MenuNode(string Path, string TextKey, int Order);
+/// <param name="IsEnabled">Enable rule of a submenu; a grayed one does not open.</param>
+public sealed record MenuNode(string Path, string TextKey, int Order, Func<CommandContext, bool>? IsEnabled = null);
 
 /// <summary>A menu item. Items of one menu are sorted by <paramref name="Group"/> then
 /// <paramref name="Order"/>; a separator goes between groups.</summary>
 /// <param name="ShortcutTextKey">Shortcut text shown after a tab, as in the original resources.</param>
 /// <param name="IsChecked">Check mark rule (Word Wrap, Status Bar).</param>
 /// <param name="IsVisible">Visibility rule (Help links without a configured URL).</param>
+/// <param name="DynamicText">Text of a visible item when it depends on the state (Recent Files);
+/// it replaces the text of <paramref name="TextKey"/>.</param>
 public sealed record MenuContribution(
     string Path,
     int Group,
@@ -117,7 +134,8 @@ public sealed record MenuContribution(
     string TextKey,
     string? ShortcutTextKey = null,
     Func<CommandContext, bool>? IsChecked = null,
-    Func<CommandContext, bool>? IsVisible = null);
+    Func<CommandContext, bool>? IsVisible = null,
+    Func<CommandContext, string>? DynamicText = null);
 
 public interface ICommandRegistry
 {
@@ -126,6 +144,10 @@ public interface ICommandRegistry
     void AddMenu(MenuNode menu);
 
     void AddMenuItem(MenuContribution item);
+
+    /// <summary>Runs once each time the menu state is computed, before the rules: for a state the
+    /// rules read many times and that is costly to get.</summary>
+    void AddMenuRefresh(Action<CommandContext> refresh);
 
     void AddKeyBinding(KeyBinding binding);
 }

@@ -220,6 +220,18 @@
     <value>Ctrl+O</value>
     <comment>menu</comment>
   </data>
+  <data name="Menu_File_Recent" xml:space="preserve">
+    <value>Recent &amp;Files</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_File_RecentItem" xml:space="preserve">
+    <value>%1 %2</value>
+    <comment>menu, port addition: %1 is the number with its access key, %2 the path</comment>
+  </data>
+  <data name="Menu_File_ClearRecent" xml:space="preserve">
+    <value>&amp;Clear Recent Files</value>
+    <comment>menu, port addition</comment>
+  </data>
   <data name="Menu_File_Save" xml:space="preserve">
     <value>&amp;Save</value>
     <comment>menu</comment>

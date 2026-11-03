@@ -75,6 +75,9 @@ public static class SettingsSchema
 
     /// <summary>Port addition: not a value of the original, so it is never imported.</summary>
     public const string AlwaysOnTop = "fAlwaysOnTop";
+
+    /// <summary>Port addition: not a value of the original, so it is never imported.</summary>
+    public const string RecentFiles = "szRecentFiles";
     public const string DefaultEncoding = "iDefaultEncoding";
     public const string SaveWindowPositions = "fSaveWindowPositions";
     public const string WindowsOnlyEol = "fWindowsOnlyEOL";

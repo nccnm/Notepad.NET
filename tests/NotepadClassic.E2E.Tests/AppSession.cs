@@ -169,6 +169,9 @@ internal sealed partial class AppSession : IDisposable
         CheckForegroundAfterInput($"typing \"{text}\"");
     }
 
+    /// <summary>Types into whatever has the focus now, a dialog for example, as <see cref="Type"/> does.</summary>
+    public static void TypeUnicode(string text) => Native.TypeUnicode(text);
+
     /// <summary>Presses a shortcut such as Ctrl+S in the main window.</summary>
     public void Press(params VirtualKeyShort[] keys)
     {

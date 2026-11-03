@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NotepadClassic.Core.CommandLine;
+using NotepadClassic.Core.Documents;
 using NotepadClassic.Core.Localization;
 using NotepadClassic.Core.Settings;
 using NotepadClassic.Platform.Services;
@@ -20,12 +21,16 @@ internal static class Program
 
         using var registry = Win32SettingsRegistry.FromEnvironment();
         StartupTrace.Mark("Registry opened");
-        using var host = AppHost.Create(services => services.AddSingleton<ISettingsStore>(new RegistrySettingsStore(
-            registry,
-            new SettingsDefaults(
-                Win32StartupInfo.UsesMetricMeasure(),
-                ResxStrings.Instance.GetString(StringKeys.DefaultHeader),
-                ResxStrings.Instance.GetString(StringKeys.DefaultTrailer)))));
+        using var host = AppHost.Create(services =>
+        {
+            services.AddSingleton<ISettingsStore>(new RegistrySettingsStore(
+                registry,
+                new SettingsDefaults(
+                    Win32StartupInfo.UsesMetricMeasure(),
+                    ResxStrings.Instance.GetString(StringKeys.DefaultHeader),
+                    ResxStrings.Instance.GetString(StringKeys.DefaultTrailer))));
+            services.AddSingleton<IRecentFilesStore>(new RegistryRecentFilesStore(registry));
+        });
         StartupTrace.Mark("Host created");
         Application.AddMessageFilter(host.Keys);
         // The window shows before any document loads, as InitApplication does.

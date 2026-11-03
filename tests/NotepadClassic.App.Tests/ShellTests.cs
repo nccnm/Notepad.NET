@@ -47,7 +47,7 @@ public sealed unsafe partial class ShellTests : IDisposable
 
         menus.Select(m => m.Text).Should().Equal("&File", "&Edit", "F&ormat", "&View", "&Help");
         menus[0].DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal(
-            "&New\tCtrl+N", "New &Window\tCtrl+Shift+N", "&Open...\tCtrl+O", "&Save\tCtrl+S", "Save &As...\tCtrl+Shift+S",
+            "&New\tCtrl+N", "New &Window\tCtrl+Shift+N", "&Open...\tCtrl+O", "Recent &Files", "&Save\tCtrl+S", "Save &As...\tCtrl+Shift+S",
             "-", "Page Set&up...", "&Print...\tCtrl+P", "-", "E&xit");
         menus[1].DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal(
             "&Undo\tCtrl+Z", "-", "Cu&t\tCtrl+X", "&Copy\tCtrl+C", "&Paste\tCtrl+V", "De&lete\tDel", "-",

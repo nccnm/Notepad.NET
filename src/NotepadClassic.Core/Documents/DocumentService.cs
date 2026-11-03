@@ -38,7 +38,8 @@ public sealed record DocumentServiceDependencies(
     IFileAccessPolicy AccessPolicy,
     IShell Shell,
     TimeDateInserter TimeDate,
-    StatusBarPresenter StatusBar);
+    StatusBarPresenter StatusBar,
+    RecentFilesService RecentFiles);
 
 /// <summary>
 /// New, Open, Save, Save As, the save-changes question, and the load and save algorithms of the
@@ -228,6 +229,29 @@ public sealed class DocumentService
         }
     }
 
+    /// <summary>
+    /// File > Recent Files: like a dropped file, save-changes question, then a load that detects the
+    /// encoding. A file that is gone leaves the list; other errors keep the entry, since a missing
+    /// drive or a locked file can come back.
+    /// </summary>
+    public void OpenRecent(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        if (!CheckSave())
+        {
+            return;
+        }
+
+        if (Load(path, TextEncodingKind.Detect) == LoadOutcome.OpenFailed)
+        {
+            ShowFileError(path, LastOpenError);
+            if (LastOpenError == FileErrors.FileNotFound)
+            {
+                _d.RecentFiles.Remove(path);
+            }
+        }
+    }
+
     /// <summary>Win32 error of the last <see cref="LoadOutcome.OpenFailed"/>.</summary>
     public int LastOpenError { get; private set; }
 
@@ -282,6 +306,7 @@ public sealed class DocumentService
 
         _d.StatusBar.UpdateAll();
         _d.Shell.AddToRecentDocuments(path);
+        _d.RecentFiles.Add(path);
         return LoadOutcome.Loaded;
     }
 
@@ -433,6 +458,7 @@ public sealed class DocumentService
         State.Path = path;
         State.IsUntitled = false;
         UpdateTitle();
+        _d.RecentFiles.Add(path);
     }
 
     /// <summary>

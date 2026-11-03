@@ -24,13 +24,15 @@ public sealed record CommandContext(
     AppOptions Options,
     SearchService Search,
     GoToService GoTo,
-    PrintService Printing);
+    PrintService Printing,
+    RecentFilesService RecentFiles);
 
 public sealed class CommandRegistry : ICommandRegistry
 {
     private readonly Dictionary<CommandId, ICommand> _commands = [];
     private readonly List<MenuNode> _menus = [];
     private readonly List<MenuContribution> _items = [];
+    private readonly List<Action<CommandContext>> _menuRefreshes = [];
     private readonly Dictionary<(KeyChord, KeyTier), KeyBinding> _keys = [];
 
     public IReadOnlyCollection<ICommand> Commands => _commands.Values;
@@ -61,6 +63,21 @@ public sealed class CommandRegistry : ICommandRegistry
     {
         ArgumentNullException.ThrowIfNull(item);
         _items.Add(item);
+    }
+
+    public void AddMenuRefresh(Action<CommandContext> refresh)
+    {
+        ArgumentNullException.ThrowIfNull(refresh);
+        _menuRefreshes.Add(refresh);
+    }
+
+    /// <summary>Runs what <see cref="AddMenuRefresh"/> collected; call it before evaluating menu rules.</summary>
+    public void RefreshMenuState(CommandContext context)
+    {
+        foreach (var refresh in _menuRefreshes)
+        {
+            refresh(context);
+        }
     }
 
     public void AddKeyBinding(KeyBinding binding)
