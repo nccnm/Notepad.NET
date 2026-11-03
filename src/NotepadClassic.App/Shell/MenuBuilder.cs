@@ -25,7 +25,15 @@ internal sealed class MenuBuilder(CommandRegistry registry, ILocalizedStrings st
             strip.Items.Add(top);
         }
 
-        strip.MenuActivate += (_, _) => UpdateState();
+        strip.MenuActivate += (_, _) =>
+        {
+            // DestroyWindow can still activate a menu bar left active, after the main window has
+            // disposed the Edit control that the enable rules ask.
+            if (strip.FindForm() is not { Disposing: true })
+            {
+                UpdateState();
+            }
+        };
         return strip;
     }
 

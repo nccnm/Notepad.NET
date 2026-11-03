@@ -166,6 +166,20 @@ public sealed class SmokeTests
     }
 
     [Fact]
+    public void Closing_while_the_menu_bar_is_active_exits_without_an_error_dialog()
+    {
+        using var app = AppSession.StartWithFile("m.txt", "text", out _);
+        Wait.Until(() => app.Text == "text", "the file text");
+
+        var view = Ui.MenuItem(app.Window, "View");
+        view.Expand();
+        view.Collapse();
+        app.Press(VirtualKeyShort.ALT, VirtualKeyShort.F4);
+
+        app.WaitForExit();
+    }
+
+    [Fact]
     public void Closing_with_unsaved_changes_asks_and_dont_save_exits()
     {
         using var app = AppSession.Start();
