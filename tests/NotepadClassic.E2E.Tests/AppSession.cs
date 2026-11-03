@@ -123,6 +123,16 @@ internal sealed partial class AppSession : IDisposable
     /// <summary><c>EM_GETSEL</c> of the Edit control.</summary>
     public (int Start, int End) Selection => Native.GetSelection(Editor.Properties.NativeWindowHandle.Value);
 
+    /// <summary>Alpha of the main window (<c>LWA_ALPHA</c>); null when it is not layered.</summary>
+    public byte? WindowAlpha => Native.GetAlpha(Window.Properties.NativeWindowHandle.Value);
+
+    /// <summary>Puts the cursor in the middle of the main window, read and set in this process's
+    /// own DPI context, since a wheel message goes to the window under the cursor.</summary>
+    public void MoveCursorIntoWindow() => Native.MoveCursorInto(Window.Properties.NativeWindowHandle.Value);
+
+    /// <summary>A real wheel event; negative is toward the user.</summary>
+    public static void Wheel(int delta) => Native.Wheel(delta);
+
     /// <summary>The five status bar parts, by their UIA names.</summary>
     public IReadOnlyList<string> StatusParts =>
         Window.FindFirstDescendant(c => c.ByName("Status Bar"))?.FindAllChildren().Select(e => e.Name).ToList() ?? [];
@@ -246,6 +256,43 @@ internal sealed partial class AppSession : IDisposable
         private const uint WM_GETTEXT = 0x000D;
         private const uint WM_GETTEXTLENGTH = 0x000E;
         private const uint EM_GETSEL = 0x00B0;
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetLayeredWindowAttributes(nint hwnd, out uint key, out byte alpha, out uint flags);
+
+        public static byte? GetAlpha(nint hwnd) =>
+            GetLayeredWindowAttributes(hwnd, out _, out var alpha, out var flags) && (flags & 0x2) != 0 ? alpha : null;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool GetWindowRect(nint hwnd, out RECT rect);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool SetCursorPos(int x, int y);
+
+        [LibraryImport("user32.dll")]
+        private static partial void mouse_event(uint flags, int dx, int dy, int data, nint extraInfo);
+
+        public static void MoveCursorInto(nint hwnd)
+        {
+            if (!GetWindowRect(hwnd, out var rect) || !SetCursorPos((rect.Left + rect.Right) / 2, (rect.Top + rect.Bottom) / 2))
+            {
+                throw new InvalidOperationException("Could not move the cursor into the window.");
+            }
+        }
+
+        public static void Wheel(int delta) => mouse_event(0x0800, 0, 0, delta, 0);
 
         [LibraryImport("user32.dll", EntryPoint = "SendMessageW")]
         private static partial nint SendMessage(nint hwnd, uint msg, nint wParam, nint lParam);

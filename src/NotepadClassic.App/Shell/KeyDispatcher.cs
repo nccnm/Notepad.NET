@@ -48,6 +48,12 @@ internal sealed class KeyDispatcher(
 
     public bool PreFilterMessage(ref Message m)
     {
+        if (m.Msg == NativeMethods.WM_MOUSEWHEEL && IsOpacityWheel(m))
+        {
+            OnOpacityWheel((short)NativeMethods.HighWord(m.WParam));
+            return true;
+        }
+
         var isKey = (m.Msg == NativeMethods.WM_KEYDOWN || m.Msg == NativeMethods.WM_SYSKEYDOWN) && !MenuActive;
         var chord = isKey ? new KeyChord((ushort)(m.WParam & 0xFFFF), _modifiers()) : default;
         if (isKey && Dispatch(chord, KeyTier.Global))
@@ -72,6 +78,37 @@ internal sealed class KeyDispatcher(
     /// <summary><c>/.SETUP</c>: the second table is <c>SlipUpAcc</c>, i.e. MainAcc followed by the
     /// setup-only keys; an earlier entry wins, so MainAcc is looked up first.</summary>
     public bool SetupMode { get; set; }
+
+    /// <summary>Wheel travel not yet worth a step: a high-resolution wheel sends less than
+    /// <c>WHEEL_DELTA</c> per message.</summary>
+    private int _opacityWheel;
+
+    /// <summary>Ctrl+Shift+wheel over the main window changes its opacity (port addition, as in
+    /// Windows Terminal). It never reaches the Edit control, which would zoom on the Ctrl.</summary>
+    private bool IsOpacityWheel(in Message m)
+    {
+        const int Chord = NativeMethods.MK_CONTROL | NativeMethods.MK_SHIFT;
+        if (MenuActive || (NativeMethods.LowWord(m.WParam) & Chord) != Chord)
+        {
+            return false;
+        }
+
+        var main = _mainWindow();
+        return m.HWnd == main || NativeMethods.IsChild(main, m.HWnd);
+    }
+
+    /// <summary>Up is more opaque, down more transparent.</summary>
+    private void OnOpacityWheel(int delta)
+    {
+        // A change of direction drops what was left of the other one.
+        _opacityWheel = Math.Sign(_opacityWheel) == -Math.Sign(delta) ? delta : _opacityWheel + delta;
+        while (Math.Abs(_opacityWheel) >= NativeMethods.WHEEL_DELTA)
+        {
+            var up = _opacityWheel > 0;
+            _opacityWheel -= up ? NativeMethods.WHEEL_DELTA : -NativeMethods.WHEEL_DELTA;
+            _registry.TryExecute(up ? CommandId.LessTransparent : CommandId.MoreTransparent, _context());
+        }
+    }
 
     private bool Dispatch(KeyChord chord, KeyTier tier)
     {

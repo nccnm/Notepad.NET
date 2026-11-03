@@ -75,7 +75,8 @@ public sealed class CommandTests
         var registry = BuiltInModules.CreateRegistry(BuiltInModules.All);
 
         registry.MenusUnder("").Select(m => m.Path).Should().Equal("File", "Edit", "Format", "View", "Help");
-        registry.MenusUnder("View").Select(m => m.Path).Should().Equal("View/Zoom");
+        registry.MenusUnder("View").Select(m => m.Path).Should().Equal("View/Zoom", "View/Transparency");
+        registry.ItemsOf("View/Transparency").Select(i => i.Command).Should().Equal(CommandId.MoreTransparent, CommandId.LessTransparent, CommandId.Opaque);
         registry.ItemsOf("File").Select(i => i.Command).Should().Equal(
             CommandId.New, CommandId.NewWindow, CommandId.Open, CommandId.Save, CommandId.SaveAs,
             CommandId.PageSetup, CommandId.Print, CommandId.Exit);
@@ -364,6 +365,39 @@ public sealed class CommandTests
 
         h.Settings.FontChanged.Should().BeFalse();
         h.Editor.Calls.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#lenh")]
+    public void Transparency_commands_step_stop_at_the_limits_and_mark_settings_changed()
+    {
+        var h = new Harness();
+        bool Can(CommandId id) => h.Registry.Find(id)!.CanExecute(h.Context);
+
+        Can(CommandId.LessTransparent).Should().BeFalse("the window starts opaque");
+        Can(CommandId.Opaque).Should().BeFalse();
+        h.Settings.ViewChanged.Should().BeFalse();
+
+        h.Run(CommandId.MoreTransparent);
+        h.Settings.OpacityPercent.Should().Be(90);
+        h.Window.OpacityPercent.Should().Be(90);
+        h.Settings.ViewChanged.Should().BeTrue();
+
+        h.Settings.OpacityPercent = 35;
+        h.Run(CommandId.MoreTransparent);
+        h.Settings.OpacityPercent.Should().Be(OpacityPolicy.Minimum);
+        Can(CommandId.MoreTransparent).Should().BeFalse("the window must stay findable on screen");
+
+        h.Run(CommandId.LessTransparent);
+        h.Window.OpacityPercent.Should().Be(40);
+
+        h.Settings.OpacityPercent = 95;
+        h.Run(CommandId.LessTransparent);
+        h.Settings.OpacityPercent.Should().Be(OpacityPolicy.Maximum);
+
+        h.Settings.OpacityPercent = 50;
+        h.Run(CommandId.Opaque);
+        h.Window.OpacityPercent.Should().Be(OpacityPolicy.Maximum);
     }
 
     [Fact]

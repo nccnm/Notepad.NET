@@ -23,6 +23,9 @@ internal static partial class NativeMethods
     public const int WM_COMMAND = 0x0111;
     public const int WM_MOUSEWHEEL = 0x020A;
     public const int WM_MOUSEHWHEEL = 0x020E;
+    public const int MK_SHIFT = 0x4;
+    public const int MK_CONTROL = 0x8;
+    public const int WHEEL_DELTA = 120;
     public const int WM_DPICHANGED = 0x02E0;
     public const int WM_APPCOMMAND = 0x0319;
     public const int APPCOMMAND_BROWSER_SEARCH = 5;

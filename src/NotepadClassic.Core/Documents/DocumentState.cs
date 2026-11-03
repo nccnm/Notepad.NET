@@ -39,6 +39,9 @@ public interface IMainWindow
 
     void SetStatusBarVisible(bool visible);
 
+    /// <summary>Opacity of the whole window, in percent (View > Transparency).</summary>
+    void SetOpacity(int percent);
+
     /// <summary>Shows the wait cursor until disposed (<c>SetCursor(IDC_WAIT)</c>).</summary>
     IDisposable ShowWaitCursor();
 }

@@ -404,6 +404,30 @@
     <value>Ctrl+0</value>
     <comment>menu</comment>
   </data>
+  <data name="Menu_View_Transparency" xml:space="preserve">
+    <value>&amp;Transparency</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_View_MoreTransparent" xml:space="preserve">
+    <value>&amp;More Transparent</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_View_MoreTransparent_Keys" xml:space="preserve">
+    <value>Ctrl+Shift+Wheel Down</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_View_LessTransparent" xml:space="preserve">
+    <value>&amp;Less Transparent</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_View_LessTransparent_Keys" xml:space="preserve">
+    <value>Ctrl+Shift+Wheel Up</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_View_Opaque" xml:space="preserve">
+    <value>&amp;Opaque</value>
+    <comment>menu, port addition</comment>
+  </data>
   <data name="Menu_View_StatusBar" xml:space="preserve">
     <value>&amp;Status Bar</value>
     <comment>menu</comment>

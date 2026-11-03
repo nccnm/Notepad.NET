@@ -279,11 +279,12 @@ public sealed class FormatModule : IFeatureModule
     }
 }
 
-/// <summary>View menu: zoom and status bar.</summary>
+/// <summary>View menu: zoom, transparency and status bar.</summary>
 public sealed class ViewModule : IFeatureModule
 {
     public const string Menu = "View";
     public const string ZoomMenu = "View/Zoom";
+    public const string TransparencyMenu = "View/Transparency";
 
     public void ConfigureServices(IServiceCollection services)
     {
@@ -294,15 +295,28 @@ public sealed class ViewModule : IFeatureModule
         ArgumentNullException.ThrowIfNull(registry);
         registry.AddMenu(new(Menu, "Menu_View", 3));
         registry.AddMenu(new(ZoomMenu, "Menu_View_Zoom", 0));
+        registry.AddMenu(new(TransparencyMenu, "Menu_View_Transparency", 1));
         registry.Command(CommandId.ZoomIn, c => SetZoom(c, ZoomPolicy.StepBy(c.Editor.Zoom, ZoomPolicy.Step)));
         registry.Command(CommandId.ZoomOut, c => SetZoom(c, ZoomPolicy.StepBy(c.Editor.Zoom, -ZoomPolicy.Step)));
         registry.Command(CommandId.ZoomRestore, c => SetZoom(c, ZoomPolicy.Restore()));
         registry.Command(CommandId.StatusBar, ToggleStatusBar);
+        registry.Command(
+            CommandId.MoreTransparent,
+            c => SetOpacity(c, OpacityPolicy.StepBy(c.Settings.OpacityPercent, -OpacityPolicy.Step)),
+            c => c.Settings.OpacityPercent > OpacityPolicy.Minimum);
+        registry.Command(
+            CommandId.LessTransparent,
+            c => SetOpacity(c, OpacityPolicy.StepBy(c.Settings.OpacityPercent, OpacityPolicy.Step)),
+            IsTransparent);
+        registry.Command(CommandId.Opaque, c => SetOpacity(c, OpacityPolicy.Maximum), IsTransparent);
 
         registry.Item(ZoomMenu, 0, 0, CommandId.ZoomIn, "Menu_View_ZoomIn", true);
         registry.Item(ZoomMenu, 0, 1, CommandId.ZoomOut, "Menu_View_ZoomOut", true);
         registry.Item(ZoomMenu, 0, 2, CommandId.ZoomRestore, "Menu_View_ZoomRestore", true);
-        registry.Item(Menu, 0, 1, CommandId.StatusBar, "Menu_View_StatusBar", isChecked: c => c.Settings.StatusBar);
+        registry.Item(TransparencyMenu, 0, 0, CommandId.MoreTransparent, "Menu_View_MoreTransparent", true);
+        registry.Item(TransparencyMenu, 0, 1, CommandId.LessTransparent, "Menu_View_LessTransparent", true);
+        registry.Item(TransparencyMenu, 0, 2, CommandId.Opaque, "Menu_View_Opaque");
+        registry.Item(Menu, 0, 2, CommandId.StatusBar, "Menu_View_StatusBar", isChecked: c => c.Settings.StatusBar);
 
         registry.Key(KeyTier.Global, VirtualKeys.OemPlus, Contribution.Ctrl, CommandId.ZoomIn);
         registry.Key(KeyTier.Global, VirtualKeys.Add, Contribution.Ctrl, CommandId.ZoomIn);
@@ -316,6 +330,15 @@ public sealed class ViewModule : IFeatureModule
     {
         c.Editor.Zoom = zoom;
         c.StatusBar.UpdateZoom();
+    }
+
+    private static bool IsTransparent(CommandContext c) => c.Settings.OpacityPercent < OpacityPolicy.Maximum;
+
+    private static void SetOpacity(CommandContext c, int percent)
+    {
+        c.Settings.OpacityPercent = percent;
+        c.Settings.ViewChanged = true;
+        c.Window.SetOpacity(percent);
     }
 
     private static void ToggleStatusBar(CommandContext c)

@@ -105,6 +105,10 @@ internal sealed class FakeWindow : IMainWindow
 
     public void SetStatusBarVisible(bool visible) => StatusBarVisible = visible;
 
+    public int? OpacityPercent { get; private set; }
+
+    public void SetOpacity(int percent) => OpacityPercent = percent;
+
     public int WaitCursors { get; private set; }
 
     public int WaitCursorsShowing { get; private set; }

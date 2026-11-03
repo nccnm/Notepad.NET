@@ -505,6 +505,19 @@ Lần so đầu tiên các hộp của port nằm cao hơn 30 px (bằng chiều
 
 Font mặc định trên máy này khác: `HKLM\Software\Microsoft\Notepad\DefaultFonts` có `Consolas`/110 nên Notepad gốc dùng Consolas 11; bản port đọc khóa máy riêng `HKLM\Software\NotepadClassic\DefaultFonts` (chưa có trên máy này) nên dùng Lucida Console 10.
 
+<a id="trong-suot"></a>
+
+## Trong suốt cửa sổ (tính năng thêm của port)
+
+Bản gốc không có tính năng này; mọi dòng đều là **cố ý khác**. Khi cửa sổ đục (mặc định), hành vi và hình ảnh giống bản gốc, trừ mục menu mới và tổ hợp chuột bên dưới.
+
+| Hành vi | Nơi cài đặt | Test | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| Menu `View > Transparency`: `More Transparent`, `Less Transparent`, `Opaque`; bước 10%, kẹp 30-100%; mục không còn tác dụng thì xám | `ViewModule`, `OpacityPolicy`, `Resources/Strings.resx` | `Transparency_commands_step_stop_at_the_limits_and_mark_settings_changed`, `Menu_bar_matches_the_original_resource_layout` | cố ý khác | Mức tối thiểu 30% để không mất dấu cửa sổ. Không thêm phím accelerator, nên hai bảng 20 và 8 phím giữ nguyên |
+| Mờ cả cửa sổ gồm chữ, menu bar, status bar, title bar bằng `WS_EX_LAYERED` + `LWA_ALPHA`; 100% thì không có style layered | `MainForm.SetOpacity` (`Form.Opacity`) | `An_opaque_window_is_not_layered_and_the_menu_commands_change_its_alpha`, `The_saved_opacity_applies_when_the_window_is_created`, `Transparency_from_the_menu_changes_the_window_and_survives_a_restart` | cố ý khác | Khác Windows Terminal: chữ cũng mờ theo, vì `EDIT` vẽ bằng GDI nên không có alpha riêng cho từng pixel. Menu thả xuống và hộp thoại là cửa sổ riêng nên vẫn đục |
+| `Ctrl+Shift+cuộn chuột` trên cửa sổ chính: lên đục hơn, xuống trong hơn | `KeyDispatcher.PreFilterMessage` | `Ctrl_shift_wheel_changes_opacity_and_is_kept_from_the_edit_control`, `Other_wheel_chords_stay_with_the_edit_control`, `The_wheel_chord_ignores_other_windows_and_an_open_menu`, `A_high_resolution_wheel_steps_once_per_notch_and_a_turn_back_starts_over` | cố ý khác | Trên bản gốc tổ hợp này tới `EDIT`; port giữ nó lại nên `Ctrl+cuộn` thường vẫn zoom như cũ, còn thêm Shift thì không zoom |
+| Lưu ở giá trị `iOpacityPercent` (`REG_DWORD`) cùng nhóm Word Wrap + Status Bar; thiếu hoặc sai kiểu thì 100, ngoài khoảng thì kẹp | `RegistrySettingsStore` | `Opacity_is_read_within_its_limits`, `Opacity_defaults_to_opaque_is_saved_with_the_view_group_and_is_not_imported` | cố ý khác | Không import từ khóa của gốc |
+
 <a id="chua-lam"></a>
 
 ## Các phần chưa làm

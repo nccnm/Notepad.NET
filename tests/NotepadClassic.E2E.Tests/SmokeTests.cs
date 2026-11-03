@@ -1,6 +1,7 @@
 using System.Text;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 
 namespace NotepadClassic.E2E.Tests;
@@ -113,6 +114,55 @@ public sealed class SmokeTests
         goTo.IsEnabled.Should().BeFalse();
         edit.Collapse();
         app.Text.Should().Be("text", "turning Word Wrap on keeps the text");
+    }
+
+    [Fact]
+    public void Transparency_from_the_menu_changes_the_window_and_survives_a_restart()
+    {
+        string folder;
+        using (var app = AppSession.StartWithFile("t.txt", "text", out _, keepFolder: true))
+        {
+            folder = app.Folder;
+            Wait.Until(() => app.Text == "text", "the file text");
+            app.WindowAlpha.Should().BeNull("a new window is opaque");
+
+            Ui.MenuItem(app.Window, "View").Expand();
+            Ui.MenuItem(app.Window, "Transparency").Expand();
+            Ui.MenuItem(app.Window, "More Transparent").Invoke();
+            Wait.Until(() => app.WindowAlpha == 229, "90% opacity", () => $"{app.WindowAlpha}");
+
+            app.Press(VirtualKeyShort.ALT, VirtualKeyShort.F4);
+            app.WaitForExit();
+        }
+
+        try
+        {
+            using var again = AppSession.StartIn(folder, "");
+            Wait.Until(() => again.WindowAlpha == 229, "the saved opacity", () => $"{again.WindowAlpha}");
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Ctrl_shift_wheel_changes_the_transparency_without_zooming()
+    {
+        using var app = AppSession.StartWithFile("t.txt", "text", out _);
+        Wait.Until(() => app.Text == "text", "the file text");
+        app.Activate();
+        app.MoveCursorIntoWindow();
+
+        using (Keyboard.Pressing(VirtualKeyShort.CONTROL, VirtualKeyShort.SHIFT))
+        {
+            AppSession.Wheel(-120);
+            Wait.Until(() => app.WindowAlpha == 229, "90% opacity", () => $"{app.WindowAlpha}");
+            AppSession.Wheel(120);
+            Wait.Until(() => app.WindowAlpha is null, "the opaque window again", () => $"{app.WindowAlpha}");
+        }
+
+        app.StatusParts.Should().Contain(" 100%", "the Edit control must not see the Ctrl of the chord");
     }
 
     [Fact]

@@ -290,6 +290,39 @@ public sealed class RegistrySettingsStoreTests
         user[SettingsSchema.StatusBar].Data.Should().Be(0);
     }
 
+    [Theory]
+    [Trait("Doc", "parity.md#registry")]
+    [InlineData(80, 80)]
+    [InlineData(5, OpacityPolicy.Minimum)]
+    [InlineData(-1, OpacityPolicy.Minimum)]
+    [InlineData(250, OpacityPolicy.Maximum)]
+    public void Opacity_is_read_within_its_limits(int stored, int expected)
+    {
+        Store().Load();
+        _registry.User![SettingsSchema.OpacityPercent] = new MemorySettingsRegistry.Value(MemorySettingsRegistry.Dword, stored);
+
+        Store().Load().OpacityPercent.Should().Be(expected);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#registry")]
+    public void Opacity_defaults_to_opaque_is_saved_with_the_view_group_and_is_not_imported()
+    {
+        _registry.SetDword(Legacy, SettingsSchema.OpacityPercent, 50);
+        _registry.SetDword(Legacy, SettingsSchema.Wrap, 1);
+        var store = Store();
+        var s = store.Load();
+        s.OpacityPercent.Should().Be(OpacityPolicy.Maximum, "the original has no such value to import");
+        _registry.User.Should().NotContainKey(SettingsSchema.OpacityPercent);
+
+        s.OpacityPercent = 70;
+        s.ViewChanged = true;
+        store.Save(s, null);
+
+        _registry.User![SettingsSchema.OpacityPercent].Should().Be(new MemorySettingsRegistry.Value(MemorySettingsRegistry.Dword, 70));
+        store.Load().OpacityPercent.Should().Be(70);
+    }
+
     [Fact]
     [Trait("Doc", "parity.md#registry")]
     public void Never_written_values_stay_untouched_even_when_every_group_changes()

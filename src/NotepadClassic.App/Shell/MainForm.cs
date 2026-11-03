@@ -44,6 +44,7 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
             Icon = icon is null ? null : new Icon(icon);
         }
         Text = strings.GetString(StringKeys.AppName);
+        SetOpacity(settings.OpacityPercent);
 
         _status = new StatusStrip
         {
@@ -210,6 +211,11 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
         _status.Visible = visible;
         LayoutChildren();
     }
+
+    /// <summary><c>WS_EX_LAYERED</c> with <c>LWA_ALPHA</c> through <see cref="Form.Opacity"/>; the
+    /// window has no layered style at 100%. The alpha covers the native Edit child as well; menu
+    /// drop-downs and dialogs are top-level windows of their own and stay opaque.</summary>
+    public void SetOpacity(int percent) => Opacity = percent / 100.0;
 
     public void SetPartText(int part, string text) => _parts[part].Text = text;
 

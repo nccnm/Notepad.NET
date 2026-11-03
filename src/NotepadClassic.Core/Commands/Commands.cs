@@ -31,6 +31,11 @@ public enum CommandId
     ViewHelp = 0x40,
     About = 0x41,
     SendFeedback = 0x42,
+
+    /// <summary>Port addition (View > Transparency), like the two below; not in the original.</summary>
+    MoreTransparent = 0x50,
+    LessTransparent = 0x51,
+    Opaque = 0x52,
     Cut = 0x300,
     Copy = 0x301,
     Paste = 0x302,

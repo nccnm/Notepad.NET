@@ -54,9 +54,11 @@ public sealed unsafe partial class ShellTests : IDisposable
             "&Search with Bing...\tCtrl+E", "&Find...\tCtrl+F", "Find &Next\tF3", "Find Pre&vious\tShift+F3",
             "&Replace...\tCtrl+H", "&Go To...\tCtrl+G", "-", "Select &All\tCtrl+A", "Time/&Date\tF5");
         menus[2].DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal("&Word Wrap", "&Font...");
-        menus[3].DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal("&Zoom", "&Status Bar");
+        menus[3].DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal("&Zoom", "&Transparency", "&Status Bar");
         ((ToolStripMenuItem)menus[3].DropDownItems[0]).DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal(
             "Zoom &In\tCtrl+Plus", "Zoom &Out\tCtrl+Minus", "&Restore Default Zoom\tCtrl+0");
+        ((ToolStripMenuItem)menus[3].DropDownItems[1]).DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal(
+            "&More Transparent\tCtrl+Shift+Wheel Down", "&Less Transparent\tCtrl+Shift+Wheel Up", "&Opaque");
         menus[4].DropDownItems.Cast<ToolStripItem>().Select(Describe).Should().Equal(
             "View &Help", "Send &Feedback", "-", "&About Notepad Classic");
     });
