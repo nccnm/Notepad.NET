@@ -1,3 +1,4 @@
+using NotepadClassic.Core.CommandLine;
 using NotepadClassic.Core.Editing;
 using NotepadClassic.Core.Services;
 using NotepadClassic.Platform.Interop;
@@ -113,13 +114,18 @@ public sealed class Win32Shell : IShell
 {
     public void OpenUri(string uri) => Shell32.ShellExecute(0, null, uri, null, null, Shell32.SW_SHOWNORMAL);
 
-    /// <summary>The original runs its own module path with an empty parameter string and <c>SW_SHOW</c>.</summary>
-    public void StartNewWindow()
+    /// <summary>Deliberate difference (parity.md): the original runs its own module path with an
+    /// empty parameter string; here that would mean "restore the next closed note".</summary>
+    public void StartNewWindow() => Start(CommandLineParser.NewWindowOption);
+
+    public void StartNextNoteWindow() => Start("");
+
+    private static void Start(string parameters)
     {
         var exe = Environment.ProcessPath;
         if (exe is not null)
         {
-            Shell32.ShellExecute(0, null, exe, "", null, Shell32.SW_SHOW);
+            Shell32.ShellExecute(0, null, exe, parameters, null, Shell32.SW_SHOW);
         }
     }
 

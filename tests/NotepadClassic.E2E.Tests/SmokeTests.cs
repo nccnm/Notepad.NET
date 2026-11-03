@@ -178,17 +178,18 @@ public sealed class SmokeTests
     }
 
     [Fact]
-    public void Closing_with_unsaved_changes_asks_and_dont_save_exits()
+    public void New_with_unsaved_changes_asks_and_dont_save_empties_the_document()
     {
         using var app = AppSession.Start();
         app.Type("draft");
         Wait.Until(() => app.Title.StartsWith('*'), "the dirty title");
 
-        app.Press(VirtualKeyShort.ALT, VirtualKeyShort.F4);
+        app.Press(VirtualKeyShort.CONTROL, VirtualKeyShort.KEY_N);
         var question = app.WaitForWindow("Notepad Classic");
         Wait.For(() => question.FindFirstDescendant(c => c.ByName("Don't Save"))?.AsButton(), "Don't Save").Invoke();
 
-        app.WaitForExit();
+        Wait.Until(() => app.Text.Length == 0, "the empty document", () => app.Text);
+        app.Title.Should().Be("Untitled - Notepad Classic");
         Directory.GetFiles(app.Folder, "*.txt").Should().BeEmpty();
     }
 }

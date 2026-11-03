@@ -35,8 +35,12 @@ public interface IShell
     /// <summary><c>ShellExecuteW(NULL, NULL, uri, ...)</c>; the result is ignored.</summary>
     void OpenUri(string uri);
 
-    /// <summary>Starts this executable again without arguments (File > New Window).</summary>
+    /// <summary>File > New Window: starts this executable again for an empty document, with
+    /// <see cref="CommandLine.CommandLineParser.NewWindowOption"/> so that it leaves closed notes alone.</summary>
     void StartNewWindow();
+
+    /// <summary>Starts this executable again without arguments: a normal start, which takes the next closed note.</summary>
+    void StartNextNoteWindow();
 
     /// <summary><c>SHAddToRecentDocs(SHARD_PATHW)</c> after a successful load.</summary>
     void AddToRecentDocuments(string path);

@@ -142,10 +142,10 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Action? BeforeCloseQuery { get; set; }
 
-    /// <summary><c>WM_QUERYENDSESSION</c>: gets <c>lParam &amp; ENDSESSION_CLOSEAPP</c>, returns
-    /// whether the session may end. WinForms' own handling (closing every form) is bypassed.</summary>
+    /// <summary><c>WM_QUERYENDSESSION</c>: returns whether the session may end. WinForms' own
+    /// handling (closing every form) is bypassed.</summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public Func<bool, bool>? QueryEndSession { get; set; }
+    public Func<bool>? QueryEndSession { get; set; }
 
     /// <summary><c>WM_ENDSESSION</c>: gets <c>wParam != 0</c> and <c>lParam &amp; ENDSESSION_CLOSEAPP</c>.</summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -492,7 +492,7 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
                 base.WndProc(ref m);
                 return;
             case NativeMethods.WM_QUERYENDSESSION:
-                m.Result = QueryEndSession is null || QueryEndSession(IsCloseApp(m.LParam)) ? 1 : 0;
+                m.Result = QueryEndSession is null || QueryEndSession() ? 1 : 0;
                 return;
             case NativeMethods.WM_ENDSESSION:
                 EndSession?.Invoke(m.WParam != 0, IsCloseApp(m.LParam));

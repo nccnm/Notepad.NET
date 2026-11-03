@@ -37,7 +37,7 @@ public sealed partial class RestartManagerTests
 
             Wait.Until(() => restarted.Text == "old and new", "the restored text", () => restarted.Text);
             restarted.Title.Should().Be("*" + AppSession.FileTitle("doc, comma.txt") + " - Notepad Classic");
-            Directory.GetFiles(Path.Combine(folder, "autosave")).Should().BeEmpty("a restored session is deleted");
+            Directory.GetFiles(Path.Combine(folder, "autosave"), id + ".*").Should().BeEmpty("a restored session is deleted");
         }
         finally
         {

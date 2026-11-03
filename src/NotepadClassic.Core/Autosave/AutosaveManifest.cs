@@ -16,8 +16,11 @@ namespace NotepadClassic.Core.Autosave;
 /// (<c>*Untitled*</c> in the original).</param>
 /// <param name="HasText">The document was dirty: its text is in the session's text file.</param>
 /// <param name="CurrentDirectory">Process current directory, set again before the restore.</param>
+/// <param name="SelectionStart">Selection of dirty text, set again after the restore. A manifest
+/// written before this field existed reads as 0.</param>
+/// <param name="SelectionEnd">End of that selection.</param>
 public sealed record AutosaveManifest(
-    int Version, TextEncodingKind Encoding, string? DocumentPath, bool HasText, string? CurrentDirectory)
+    int Version, TextEncodingKind Encoding, string? DocumentPath, bool HasText, string? CurrentDirectory, int SelectionStart = 0, int SelectionEnd = 0)
 {
     public const int CurrentVersion = 1;
 

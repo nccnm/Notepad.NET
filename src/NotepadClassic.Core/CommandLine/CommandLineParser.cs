@@ -5,8 +5,12 @@ namespace NotepadClassic.Core.CommandLine;
 /// <summary>What the command line asks for.</summary>
 public enum StartupAction
 {
-    /// <summary>Nothing after the options: an empty untitled document.</summary>
+    /// <summary>Nothing after the options: the next closed note, otherwise an empty untitled document.</summary>
     None,
+
+    /// <summary><c>/.NEWWINDOW</c> (port addition, File > New Window): an empty untitled document,
+    /// even when closed notes are waiting.</summary>
+    NewWindow,
 
     /// <summary>Open <see cref="ParsedCommandLine.FileArgument"/> (create it after asking when missing).</summary>
     Open,
@@ -47,6 +51,7 @@ public sealed record ParsedCommandLine(
 public static class CommandLineParser
 {
     public const string SetupOption = "/.SETUP";
+    public const string NewWindowOption = "/.NEWWINDOW";
     public const string PrintToOption = "/PT";
     public const string PrintOption = "/P";
     public const string RestartPrefix = "RestartByRestartManager:";
@@ -103,6 +108,11 @@ public static class CommandLineParser
             if (HasPrefix(rest, SetupOption))
             {
                 return new(forced, StartupAction.Setup, SkipBlanks(rest, SetupOption.Length));
+            }
+
+            if (HasPrefix(rest, NewWindowOption))
+            {
+                return new(forced, StartupAction.NewWindow, "");
             }
 
             if (HasPrefix(rest, PrintToOption))

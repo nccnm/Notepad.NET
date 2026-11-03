@@ -31,6 +31,32 @@ public sealed class StartupCoordinatorTests
         _h.Dialogs.Messages.Should().BeEmpty();
     }
 
+    [Theory]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    [InlineData("", 1)]
+    [InlineData("/A", 1)]
+    [InlineData("/.NEWWINDOW", 0)]
+    [InlineData("/P", 0)]
+    [InlineData("RestartByRestartManager:x", 0)]
+    public void Only_a_start_without_a_task_takes_a_closed_note(string arguments, int restores)
+    {
+        Run(arguments).Should().Be(StartupResult.Run);
+
+        _host.ClosedNoteRestores.Should().Be(restores);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void New_window_is_a_file_name_for_an_untrusted_source()
+    {
+        const string named = @"C:\w\/.NEWWINDOW";
+        _h.Files.Files[named] = "text"u8.ToArray();
+
+        Run("/.NEWWINDOW", untrusted: true);
+
+        _h.State.Path.Should().Be(named);
+    }
+
     [Fact]
     [Trait("Doc", "parity.md#dong-lenh")]
     public void An_existing_file_opens_with_the_forced_encoding()
@@ -328,5 +354,9 @@ public sealed class StartupCoordinatorTests
         public void Print(PrintRequest request) => Prints.Add(request);
 
         public void Restore(string restartId) => Restores.Add(restartId);
+
+        public int ClosedNoteRestores { get; private set; }
+
+        public void RestoreClosedNote() => ClosedNoteRestores++;
     }
 }

@@ -510,13 +510,15 @@ public sealed unsafe partial class ShellTests : IDisposable
 
     [Fact]
     [Trait("Doc", "parity.md#lenh")]
-    public void Closing_asks_to_save_and_cancel_keeps_the_window() => Sta.Run(() =>
+    public void Closing_asks_when_the_note_cannot_be_kept_and_cancel_keeps_the_window() => Sta.Run(() =>
     {
         using var app = new TestApp();
         app.Editor.ReplaceSelection("unsaved", canUndo: true);
+        File.WriteAllText(app.AutosaveFolder, "a file where the folder should be");
         app.Dialogs.SaveChanges.Enqueue(SaveChangesChoice.Cancel);
 
         app.Host.Window.Close();
+        File.Delete(app.AutosaveFolder);
 
         app.Host.Window.IsDisposed.Should().BeFalse();
         app.Dialogs.Messages.Should().Equal("Do you want to save changes to Untitled?");

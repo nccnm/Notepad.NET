@@ -41,6 +41,54 @@ public sealed class Win32AutosaveStoreTests : IDisposable
     }
 
     [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void A_lock_excludes_a_second_holder_until_it_is_released_and_leaves_no_file()
+    {
+        var first = Store.TryLock(Id);
+
+        first.Should().NotBeNull();
+        Store.TryLock(Id).Should().BeNull();
+        using (var other = Store.TryLock(OtherId))
+        {
+            other.Should().NotBeNull();
+        }
+
+        first!.Dispose();
+        using (var second = Store.TryLock(Id))
+        {
+            second.Should().NotBeNull();
+        }
+
+        Directory.GetFiles(Store.Folder).Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void A_held_lock_is_no_entry_and_delete_leaves_it_alone()
+    {
+        using var held = Store.TryLock(Id);
+        Store.List().Should().BeEmpty();
+
+        Store.WriteText(Id, "text");
+        Store.WriteManifest(Id, "{}");
+        Store.List().Should().ContainSingle().Which.Should().Match<AutosaveEntry>(e => e.HasManifest && e.HasText);
+
+        Store.Delete(Id);
+
+        Store.List().Should().BeEmpty();
+        Store.TryLock(Id).Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void An_entry_without_a_text_file_does_not_report_text()
+    {
+        Store.WriteManifest(Id, "{}");
+
+        Store.List().Should().ContainSingle().Which.HasText.Should().BeFalse();
+    }
+
+    [Fact]
     [Trait("Doc", "parity.md#autosave-va-restart-manager")]
     public void Can_save_refuses_more_than_the_free_space()
     {

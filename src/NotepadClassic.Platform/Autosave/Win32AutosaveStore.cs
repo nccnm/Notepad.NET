@@ -18,7 +18,9 @@ public sealed class Win32AutosaveStore : IAutosaveStore
     private const string ManifestExtension = ".json";
     private const string TextExtension = ".txt";
     private const string TempSuffix = ".tmp";
+    private const string LockExtension = ".lock";
     private const string ProbeName = "probe.tmp";
+    private const int SharingViolation = unchecked((int)0x80070020);
 
     public Win32AutosaveStore(string folder)
     {
@@ -123,6 +125,28 @@ public sealed class Win32AutosaveStore : IAutosaveStore
         });
     }
 
+    /// <summary>
+    /// An empty <c>&lt;id&gt;.lock</c> opened without sharing and deleted when closed. The file is only
+    /// a name to hold: a process that ends in any way loses its handle, so a crash cannot leave an
+    /// entry locked for good.
+    /// </summary>
+    public IDisposable? TryLock(string id)
+    {
+        var path = PathOf(id, LockExtension);
+        return Guard<IDisposable?>(() =>
+        {
+            try
+            {
+                Directory.CreateDirectory(Folder);
+                return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 1, FileOptions.DeleteOnClose);
+            }
+            catch (IOException e) when (e.HResult == SharingViolation)
+            {
+                return null;
+            }
+        });
+    }
+
     public IReadOnlyList<AutosaveEntry> List() => Guard<IReadOnlyList<AutosaveEntry>>(() =>
     {
         if (!Directory.Exists(Folder))
@@ -131,26 +155,27 @@ public sealed class Win32AutosaveStore : IAutosaveStore
         }
 
         var now = DateTime.UtcNow;
-        var entries = new Dictionary<string, (bool HasManifest, DateTime Newest)>(StringComparer.OrdinalIgnoreCase);
+        var entries = new Dictionary<string, (bool HasManifest, bool HasText, DateTime Newest)>(StringComparer.OrdinalIgnoreCase);
         foreach (var file in new DirectoryInfo(Folder).EnumerateFiles())
         {
             var name = file.Name;
             var dot = name.IndexOf('.', StringComparison.Ordinal);
             var id = dot < 0 ? name : name[..dot];
-            if (!AutosaveSession.IsValidId(id))
+            if (!AutosaveSession.IsValidId(id) || name.EndsWith(LockExtension, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
             var hasManifest = name.Length == id.Length + ManifestExtension.Length && name.EndsWith(ManifestExtension, StringComparison.OrdinalIgnoreCase);
+            var hasText = name.Length == id.Length + TextExtension.Length && name.EndsWith(TextExtension, StringComparison.OrdinalIgnoreCase);
             var written = file.LastWriteTimeUtc;
             entries[id] = entries.TryGetValue(id, out var known)
-                ? (known.HasManifest || hasManifest, written > known.Newest ? written : known.Newest)
-                : (hasManifest, written);
+                ? (known.HasManifest || hasManifest, known.HasText || hasText, written > known.Newest ? written : known.Newest)
+                : (hasManifest, hasText, written);
         }
 
         return entries
-            .Select(e => new AutosaveEntry(e.Key, e.Value.HasManifest, now > e.Value.Newest ? now - e.Value.Newest : TimeSpan.Zero))
+            .Select(e => new AutosaveEntry(e.Key, e.Value.HasManifest, now > e.Value.Newest ? now - e.Value.Newest : TimeSpan.Zero, e.Value.HasText))
             .ToList();
     });
 

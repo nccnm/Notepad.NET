@@ -220,10 +220,12 @@ public sealed unsafe partial class StartupShellTests : IDisposable
         var store = new PresetStore(new NotepadSettings());
         using var app = new TestApp(store: store);
         app.Editor.ReplaceSelection("unsaved", canUndo: true);
+        File.WriteAllText(app.AutosaveFolder, "a file where the folder should be");
         app.Dialogs.SaveChanges.Enqueue(Core.Services.SaveChangesChoice.Cancel);
 
         app.Host.Settings.WindowBaseline.Should().Be(default(WindowRect));
         app.Host.Window.Close();
+        File.Delete(app.AutosaveFolder);
 
         store.Saves.Should().ContainSingle().Which.Window.Should().NotBeNull().And.NotBe(default(WindowRect));
         app.Host.Window.IsDisposed.Should().BeFalse();

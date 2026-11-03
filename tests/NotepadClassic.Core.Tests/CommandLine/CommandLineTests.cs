@@ -38,6 +38,8 @@ public sealed class CommandLineTests
     [InlineData("/w  \t\"a b.txt\"", TextEncodingKind.Utf16LE, StartupAction.Open, "\"a b.txt\"")]
     [InlineData("/aXYZ.txt", TextEncodingKind.Ansi, StartupAction.Open, "XYZ.txt")]
     [InlineData("/A", TextEncodingKind.Ansi, StartupAction.None, "")]
+    [InlineData("/.NEWWINDOW", TextEncodingKind.Detect, StartupAction.NewWindow, "")]
+    [InlineData("/.newwindow", TextEncodingKind.Detect, StartupAction.NewWindow, "")]
     [InlineData("/A /W x", TextEncodingKind.Ansi, StartupAction.Open, "/W x")]
     [InlineData("/.SETUP  c:\\x.inf", TextEncodingKind.Detect, StartupAction.Setup, "c:\\x.inf")]
     [InlineData("/.setup", TextEncodingKind.Detect, StartupAction.Setup, "")]

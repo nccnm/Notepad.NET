@@ -3,7 +3,8 @@ namespace NotepadClassic.Core.Autosave;
 /// <summary>A session found in the autosave folder.</summary>
 /// <param name="HasManifest">The manifest file exists; without it the entry can never be restored.</param>
 /// <param name="Age">Time since the newest of its files was written.</param>
-public readonly record struct AutosaveEntry(string Id, bool HasManifest, TimeSpan Age);
+/// <param name="HasText">The text file exists.</param>
+public readonly record struct AutosaveEntry(string Id, bool HasManifest, TimeSpan Age, bool HasText = false);
 
 /// <summary>
 /// The autosave folder (<c>%LOCALAPPDATA%\NotepadClassic\Autosave</c>): per session id a
@@ -32,8 +33,16 @@ public interface IAutosaveStore
     /// <summary>Full path of the text file of <paramref name="id"/> (it is loaded like any file).</summary>
     string TextPath(string id);
 
-    /// <summary>Deletes every file of <paramref name="id"/>; missing files are not an error.</summary>
+    /// <summary>Deletes every file of <paramref name="id"/>, except its lock; missing files are not an error.</summary>
     void Delete(string id);
+
+    /// <summary>
+    /// Takes the lock of <paramref name="id"/> until the result is disposed, or returns null when
+    /// another holder has it. A running window holds the lock of its own entry, and a window restoring
+    /// an entry holds that entry's: an entry whose lock is free belongs to no window. The operating
+    /// system releases the lock when a process ends in any way.
+    /// </summary>
+    IDisposable? TryLock(string id);
 
     /// <summary>Sessions whose files are in the folder; files not named after a session id are left out.</summary>
     IReadOnlyList<AutosaveEntry> List();

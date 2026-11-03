@@ -292,6 +292,10 @@ public sealed unsafe partial class PrintingTests : IDisposable
         {
         }
 
+        public void StartNextNoteWindow()
+        {
+        }
+
         public void AddToRecentDocuments(string path)
         {
         }

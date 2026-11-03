@@ -26,14 +26,19 @@ namespace NotepadClassic.App;
 /// <summary>Composition root: services, feature modules, the main window and its wiring.</summary>
 internal sealed class AppHost : IDisposable
 {
+    /// <summary>Time from the first change to the snapshot of dirty text, which is what a crash can lose.</summary>
+    private const int SnapshotDelayMilliseconds = 3000;
+
     private readonly ServiceProvider _services;
     private readonly CaretWatcher _caret;
+    private readonly System.Windows.Forms.Timer _snapshots;
 
     private AppHost(
         ServiceProvider services, MainForm window, CommandRegistry registry, CommandContext context, MenuBuilder menus, KeyDispatcher keys, CaretWatcher caret,
-        AutosaveService autosave)
+        AutosaveService autosave, System.Windows.Forms.Timer snapshots)
     {
         Autosave = autosave;
+        _snapshots = snapshots;
         _services = services;
         Window = window;
         Menus = menus;
@@ -88,12 +93,25 @@ internal sealed class AppHost : IDisposable
             app.Keys.SetupMode = true;
         }
 
-        public void RequestClose() => app.Window.RequestClose();
+        /// <summary>Only a command-line print closes the window this way.</summary>
+        public void RequestClose()
+        {
+            app.Autosave.AskOnClose = true;
+            app.Window.RequestClose();
+        }
 
         public void Print(PrintRequest request) =>
             app.Context.Printing.Print(request.PrinterName is null ? PrinterChoice.Default : PrinterChoice.Named, request.PrinterName);
 
         public void Restore(string restartId) => app.Autosave.Restore(restartId);
+
+        public void RestoreClosedNote()
+        {
+            if (app.Autosave.RestoreClosedNote())
+            {
+                app.Context.Shell.StartNextNoteWindow();
+            }
+        }
     }
 
     /// <summary>Builds the app. <paramref name="configure"/> replaces services (tests use fakes).</summary>
@@ -235,6 +253,23 @@ internal sealed class AppHost : IDisposable
         window.CloseQuery = autosave.ConfirmClose;
         window.QueryEndSession = autosave.QueryEndSession;
         window.EndSession = autosave.EndSession;
+        // Not restarted by further changes, so that typing without a pause still gets snapshots.
+        var snapshots = new System.Windows.Forms.Timer { Interval = SnapshotDelayMilliseconds };
+        snapshots.Tick += (_, _) =>
+        {
+            snapshots.Stop();
+            autosave.Snapshot();
+        };
+        void ScheduleSnapshot(object? sender, EventArgs e)
+        {
+            if (autosave.WantsSnapshot)
+            {
+                snapshots.Start();
+            }
+        }
+
+        editor.TextChanged += ScheduleSnapshot;
+        documents.TitleUpdated += ScheduleSnapshot;
         StartupTrace.Mark("Placement, autosave registered");
         documents.UpdateTitle();
         statusBar.UpdateAll();
@@ -249,7 +284,7 @@ internal sealed class AppHost : IDisposable
                 statusBar.UpdateLineColumn(force: false);
             }
         });
-        return new AppHost(sp, window, registry, context, menus, keys, caret, autosave);
+        return new AppHost(sp, window, registry, context, menus, keys, caret, autosave, snapshots);
     }
 
     /// <summary>Help and Feedback links from the assembly metadata of the app project.</summary>
@@ -261,6 +296,8 @@ internal sealed class AppHost : IDisposable
 
     public void Dispose()
     {
+        _snapshots.Dispose();
+        Autosave.Dispose();
         _caret.Dispose();
         Window.Dispose();
         _services.Dispose();

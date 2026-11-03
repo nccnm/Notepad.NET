@@ -24,6 +24,9 @@ public interface IStartupHost
 
     /// <summary><c>RestartByRestartManager:</c> with a 36-character id: restores the autosaved document.</summary>
     void Restore(string restartId);
+
+    /// <summary>A start without arguments: takes the next note that a closed window left behind.</summary>
+    void RestoreClosedNote();
 }
 
 public enum StartupResult
@@ -70,9 +73,12 @@ public sealed class StartupCoordinator(
                 }
 
                 return StartupResult.Run;
+            case StartupAction.None:
+                host.RestoreClosedNote();
+                return StartupResult.Run;
             default:
-                // None, and InvalidPrint: deliberate difference (parity.md), the original retries
-                // the whole "/P..." line as a file name.
+                // NewWindow, and InvalidPrint: deliberate difference (parity.md), the original
+                // retries the whole "/P..." line as a file name.
                 return StartupResult.Run;
         }
     }

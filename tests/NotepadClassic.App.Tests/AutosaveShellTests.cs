@@ -1,8 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
 using NotepadClassic.App.Interop;
 using NotepadClassic.Core.Autosave;
 using NotepadClassic.Core.CommandLine;
-using NotepadClassic.Core.Services;
 using NotepadClassic.Core.Text;
+using NotepadClassic.Platform.Autosave;
 using NotepadClassic.Platform.Services;
 
 namespace NotepadClassic.App.Tests;
@@ -44,17 +45,118 @@ public sealed class AutosaveShellTests : IDisposable
 
     [Fact]
     [Trait("Doc", "parity.md#autosave-va-restart-manager")]
-    public void A_logoff_asks_the_save_changes_question_and_cancel_blocks_it() => Sta.Run(() =>
+    public void A_logoff_keeps_the_text_without_asking() => Sta.Run(() =>
     {
         using var app = new TestApp();
         File.WriteAllText(PathOf("a.txt"), "saved");
         MakeDirty(app, PathOf("a.txt"), "changed");
-        app.Dialogs.SaveChanges.Enqueue(SaveChangesChoice.Cancel);
 
-        Send(app, NativeMethods.WM_QUERYENDSESSION, 0, 0).Should().Be(0);
+        Send(app, NativeMethods.WM_QUERYENDSESSION, 0, 0).Should().Be(1);
+        Send(app, NativeMethods.WM_ENDSESSION, 1, 0).Should().Be(0);
 
-        app.Dialogs.Messages.Should().ContainSingle();
+        app.Dialogs.Messages.Should().BeEmpty();
         app.Host.Window.IsDisposed.Should().BeFalse("WinForms does not close the form on its own");
+        File.ReadAllText(Path.Combine(app.AutosaveFolder, app.Host.Autosave.SessionId + ".txt"), System.Text.Encoding.Unicode).Should().Be("changed");
+    });
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void Closing_keeps_the_note_and_a_start_without_arguments_brings_it_back() => Sta.Run(() =>
+    {
+        string id;
+        using (var app = new TestApp())
+        {
+            app.Editor.ReplaceSelection("my note\r\nline 2", canUndo: true);
+            app.Editor.SetSelection(3, 7);
+            id = app.Host.Autosave.SessionId;
+
+            app.Host.Window.Close();
+
+            app.Dialogs.Messages.Should().BeEmpty();
+            app.Host.Window.IsDisposed.Should().BeTrue();
+            CopyFolder(app.AutosaveFolder, PathOf("saved"));
+        }
+
+        using var again = new TestApp();
+        CopyFolder(PathOf("saved"), again.AutosaveFolder);
+
+        again.Host.RunCommandLine("", untrustedSource: false).Should().Be(StartupResult.Run);
+
+        again.Text.Should().Be("my note\r\nline 2");
+        again.Host.Window.Text.Should().Be("*Untitled - Notepad Classic");
+        again.Editor.Selection.Should().Be(new Core.Editing.TextRange(3, 7));
+        File.Exists(Path.Combine(again.AutosaveFolder, id + ".json")).Should().BeFalse("the note moved to the new run's entry");
+        File.Exists(Path.Combine(again.AutosaveFolder, again.Host.Autosave.SessionId + ".txt")).Should().BeTrue();
+        again.Shell.NextNoteWindows.Should().Be(0);
+    });
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void Two_notes_ask_for_one_more_window() => Sta.Run(() =>
+    {
+        foreach (var text in (string[])["first", "second"])
+        {
+            using var app = new TestApp();
+            app.Editor.ReplaceSelection(text, canUndo: true);
+            app.Host.Window.Close();
+            CopyFolder(app.AutosaveFolder, PathOf("saved"));
+        }
+
+        using var again = new TestApp();
+        CopyFolder(PathOf("saved"), again.AutosaveFolder);
+
+        again.Host.RunCommandLine("", untrustedSource: false);
+
+        again.Shell.NextNoteWindows.Should().Be(1);
+    });
+
+    [Theory]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    [InlineData("/.NEWWINDOW")]
+    [InlineData("\"{0}\"")]
+    public void New_window_and_opening_a_file_leave_closed_notes_waiting(string arguments) => Sta.Run(() =>
+    {
+        File.WriteAllText(PathOf("a.txt"), "the file");
+        using (var app = new TestApp())
+        {
+            app.Editor.ReplaceSelection("my note", canUndo: true);
+            app.Host.Window.Close();
+            CopyFolder(app.AutosaveFolder, PathOf("saved"));
+        }
+
+        using var again = new TestApp();
+        CopyFolder(PathOf("saved"), again.AutosaveFolder);
+
+        again.Host.RunCommandLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, arguments, PathOf("a.txt")), untrustedSource: false);
+
+        again.Text.Should().NotContain("my note");
+        Directory.GetFiles(again.AutosaveFolder, "*.json").Should().ContainSingle();
+    });
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void Two_windows_do_not_take_each_others_notes() => Sta.Run(() =>
+    {
+        using var first = new TestApp();
+        first.Editor.ReplaceSelection("live", canUndo: true);
+        first.Host.Autosave.Snapshot();
+        using var second = new TestApp(configure: services =>
+            services.AddSingleton<IAutosaveStore>(new Win32AutosaveStore(first.AutosaveFolder)));
+
+        second.Host.RunCommandLine("", untrustedSource: false);
+
+        second.Text.Should().BeEmpty();
+        Directory.GetFiles(first.AutosaveFolder, "*.txt").Should().ContainSingle();
+    });
+
+    [Fact]
+    [Trait("Doc", "parity.md#ghi-chu-chua-luu")]
+    public void A_command_line_print_asks_on_close() => Sta.Run(() =>
+    {
+        using var app = new TestApp();
+        // A missing file: nothing reaches a printer.
+        app.Host.RunCommandLine($"/P \"{PathOf("missing.txt")}\"", untrustedSource: false);
+        app.Host.Autosave.AskOnClose.Should().BeTrue();
     });
 
     [Fact]
@@ -103,7 +205,8 @@ public sealed class AutosaveShellTests : IDisposable
         restarted.Host.Window.Text.Should().Be("*" + new Win32FileTitleProvider().GetTitle(path) + " - Notepad Classic");
         restarted.Host.Context.Documents.State.Path.Should().Be(path);
         restarted.Host.Context.Documents.State.CurrentEncoding.Should().Be(TextEncodingKind.Utf8Bom);
-        Directory.GetFiles(restarted.AutosaveFolder).Should().BeEmpty("a restored session is deleted");
+        File.Exists(Path.Combine(restarted.AutosaveFolder, id + ".json")).Should().BeFalse("a restored session is deleted");
+        File.Exists(Path.Combine(restarted.AutosaveFolder, id + ".txt")).Should().BeFalse("a restored session is deleted");
     });
 
     [Fact]
@@ -125,7 +228,7 @@ public sealed class AutosaveShellTests : IDisposable
         Directory.CreateDirectory(to);
         foreach (var file in Directory.GetFiles(from))
         {
-            File.Copy(file, Path.Combine(to, Path.GetFileName(file)));
+            File.Copy(file, Path.Combine(to, Path.GetFileName(file)), overwrite: true);
         }
     }
 }

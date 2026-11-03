@@ -64,6 +64,10 @@ public sealed class DocumentService
 
     public DocumentState State { get; }
 
+    /// <summary>The title was updated: the document got a new name, was saved, or became dirty or
+    /// clean. Text changes that leave the title alone only raise <see cref="IEditorSurface.TextChanged"/>.</summary>
+    public event EventHandler? TitleUpdated;
+
     /// <summary><c>IsDocumentDirty</c>: an untitled empty document never needs saving, even after
     /// typing and deleting; otherwise <c>EM_GETMODIFY</c>.</summary>
     public bool IsDirty => !(State.IsUntitled && _editor.TextLength == 0) && _editor.Modified;
@@ -75,6 +79,7 @@ public sealed class DocumentService
         var name = State.IsUntitled || State.Path is null ? _d.Strings.GetString(StringKeys.Untitled) : _d.FileTitles.GetTitle(State.Path);
         _d.Window.SetTitle(MessageText.FormatInserts(_d.Strings.GetString(StringKeys.TitleFormat), dirty ? "*" : "", name));
         State.TitleShowsDirty = dirty;
+        TitleUpdated?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnTextChanged()

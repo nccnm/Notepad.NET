@@ -65,10 +65,14 @@ Settings live in `HKCU\Software\NotepadClassic` (machine-wide default font in
 `NOTEPADCLASSIC_SETTINGS_HIVE` to a file path makes the app keep every settings key in that
 application hive instead (end-to-end tests use it).
 
-When Restart Manager closes the app (Windows Update, an installer), unsaved text is kept in
-`%LOCALAPPDATA%\NotepadClassic\Autosave` (`<id>.json` manifest and `<id>.txt` raw UTF-16 LE) and restored when
-Windows starts the app again with `RestartByRestartManager:<id>`. A normal logoff or shutdown still asks to save.
-`NOTEPADCLASSIC_AUTOSAVE_DIR` names another folder (tests use temporary ones).
+Closing a window with unsaved text asks nothing: like the newer Windows 11 Notepad, the text stays in
+`%LOCALAPPDATA%\NotepadClassic\Autosave` (`<id>.json` manifest and `<id>.txt` raw UTF-16 LE, not encrypted) and the
+next start without arguments brings it back, one window per note; File > New Window and opening a file leave it
+waiting. To drop a note, press Ctrl+N and choose Don't Save. While the app runs the same files are updated within
+3 seconds of a change, so a crash or power cut loses only the last seconds (text over 8 MiB is written only on
+close). The question comes back only when the text cannot be written there. A logoff, a shutdown and a Restart
+Manager close (Windows Update, an installer) keep the text the same way, and Windows can also restart the app with
+`RestartByRestartManager:<id>`. `NOTEPADCLASSIC_AUTOSAVE_DIR` names another folder (tests use temporary ones).
 
 Links the original hard-codes are read from `AssemblyMetadata` in the app project: `HelpUrl`, `FeedbackUrl` and
 `PageSetupHelpUrl` (the "Input Values" link of Page Setup). An empty value hides the menu item or the link.

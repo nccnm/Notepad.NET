@@ -155,6 +155,10 @@ internal sealed class FakeShell : IShell
 
     public void StartNewWindow() => NewWindows++;
 
+    public void StartNextNoteWindow()
+    {
+    }
+
     public void AddToRecentDocuments(string path) => RecentDocuments.Add(path);
 }
 

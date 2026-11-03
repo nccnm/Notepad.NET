@@ -80,6 +80,26 @@ internal sealed class FakeAutosaveStore(MemoryFileSystem files) : IAutosaveStore
     }
 
     public IReadOnlyList<AutosaveEntry> List() => FailList ? throw new IOException("no folder") : Entries;
+
+    /// <summary>Ids locked right now, by this run or another.</summary>
+    public HashSet<string> Locks { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public bool FailLock { get; set; }
+
+    public IDisposable? TryLock(string id)
+    {
+        if (FailLock)
+        {
+            throw new IOException("no folder");
+        }
+
+        return Locks.Add(id) ? new Held(() => Locks.Remove(id)) : null;
+    }
+
+    private sealed class Held(Action release) : IDisposable
+    {
+        public void Dispose() => release();
+    }
 }
 
 internal sealed class FakeProcessDirectory : IProcessDirectory
