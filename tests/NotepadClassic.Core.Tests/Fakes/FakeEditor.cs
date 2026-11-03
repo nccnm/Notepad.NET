@@ -22,6 +22,9 @@ internal sealed class FakeEditor : IEditorSurface
 
     public bool FailNextLoad { get; set; }
 
+    /// <summary>The next <see cref="ReplaceSelection"/> takes nothing, as out of memory does.</summary>
+    public bool FailNextReplace { get; set; }
+
     public bool FailWordWrap { get; set; }
 
     public bool FailFont { get; set; }
@@ -84,6 +87,13 @@ internal sealed class FakeEditor : IEditorSurface
     public void ReplaceSelection(string text, bool canUndo)
     {
         Calls.Add($"ReplaceSelection({text.Replace("\r\n", "\\r\\n", StringComparison.Ordinal)},{canUndo})");
+        if (FailNextReplace)
+        {
+            FailNextReplace = false;
+            RaiseOutOfSpace();
+            return;
+        }
+
         _text.Remove(_start, _end - _start).Insert(_start, text);
         _start = _end = _start + text.Length;
         CaretIndex = _end;

@@ -84,6 +84,7 @@ public sealed class FileModule : IFeatureModule
         registry.Command(CommandId.Open, c => c.Documents.Open());
         registry.Command(CommandId.Save, c => c.Documents.Save());
         registry.Command(CommandId.SaveAs, c => c.Documents.SaveAs());
+        registry.Command(CommandId.DiscardChanges, c => c.Documents.DiscardChanges(), c => c.Documents.IsDirty);
         registry.Command(CommandId.PageSetup, c => c.Printing.PageSetup());
         registry.Command(CommandId.Print, c => c.Printing.Print(PrinterChoice.Dialog));
         registry.Command(CommandId.Exit, c => c.Window.RequestClose());
@@ -94,6 +95,7 @@ public sealed class FileModule : IFeatureModule
         AddRecentFiles(registry);
         registry.Item(Menu, 0, 4, CommandId.Save, "Menu_File_Save", true);
         registry.Item(Menu, 0, 5, CommandId.SaveAs, "Menu_File_SaveAs", true);
+        registry.Item(Menu, 0, 6, CommandId.DiscardChanges, "Menu_File_DiscardChanges");
         registry.Item(Menu, 1, 0, CommandId.PageSetup, "Menu_File_PageSetup");
         registry.Item(Menu, 1, 1, CommandId.Print, "Menu_File_Print", true);
         registry.Item(Menu, 2, 0, CommandId.Exit, "Menu_File_Exit");

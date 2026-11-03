@@ -79,7 +79,7 @@ public sealed class CommandTests
         registry.ItemsOf("View/Transparency").Select(i => i.Command).Should().Equal(CommandId.MoreTransparent, CommandId.LessTransparent, CommandId.Opaque);
         registry.ItemsOf("View").Select(i => i.Command).Should().Equal(CommandId.AlwaysOnTop, CommandId.StatusBar);
         registry.ItemsOf("File").Select(i => i.Command).Should().Equal(
-            CommandId.New, CommandId.NewWindow, CommandId.Open, CommandId.Save, CommandId.SaveAs,
+            CommandId.New, CommandId.NewWindow, CommandId.Open, CommandId.Save, CommandId.SaveAs, CommandId.DiscardChanges,
             CommandId.PageSetup, CommandId.Print, CommandId.Exit);
         registry.MenusUnder("File").Select(m => (m.Path, m.Order)).Should().Equal([("File/Recent", 3)]);
         registry.ItemsOf("File").Single(i => i.Command == CommandId.Open).Order.Should().Be(2);

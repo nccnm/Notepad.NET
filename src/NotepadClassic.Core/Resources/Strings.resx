@@ -280,6 +280,10 @@
     <value>Ctrl+Shift+S</value>
     <comment>menu</comment>
   </data>
+  <data name="Menu_File_DiscardChanges" xml:space="preserve">
+    <value>&amp;Discard Changes</value>
+    <comment>menu, port addition</comment>
+  </data>
   <data name="Menu_File_PageSetup" xml:space="preserve">
     <value>Page Set&amp;up...</value>
     <comment>menu</comment>

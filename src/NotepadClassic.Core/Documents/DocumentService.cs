@@ -298,7 +298,7 @@ public sealed class DocumentService
         ArgumentNullException.ThrowIfNull(path);
         // Before the read: a write that lands during it then counts as a change, not as what was read.
         var stamp = _d.FileSystem.GetStamp(path);
-        var outcome = Read(path, forcedEncoding, autosaved: false, out var document);
+        var outcome = Read(path, forcedEncoding, autosaved: false, keepDocumentOnFailure: false, out var document);
         if (outcome != LoadOutcome.Loaded)
         {
             return outcome;
@@ -331,11 +331,12 @@ public sealed class DocumentService
     }
 
     /// <summary>
-    /// Opens and decodes a file for <see cref="Load"/> or <see cref="RestoreAutosavedText"/>:
-    /// size limit (string 8), access policy (not for the port's own autosave file), decode. An
-    /// allocation failure leaves an untitled document and shows string 8.
+    /// Opens and decodes a file for <see cref="Load"/>, <see cref="RestoreAutosavedText"/> or
+    /// <see cref="DiscardChanges"/>: size limit (string 8), access policy (not for the port's own
+    /// autosave file), decode. An allocation failure shows string 8 and leaves an untitled document,
+    /// unless <paramref name="keepDocumentOnFailure"/> says the current one must stay.
     /// </summary>
-    private LoadOutcome Read(string path, TextEncodingKind forcedEncoding, bool autosaved, out DecodedDocument document)
+    private LoadOutcome Read(string path, TextEncodingKind forcedEncoding, bool autosaved, bool keepDocumentOnFailure, out DecodedDocument document)
     {
         document = null!;
         IFileContent file;
@@ -370,7 +371,11 @@ public sealed class DocumentService
             }
             catch (OutOfMemoryException)
             {
-                ResetToUntitled();
+                if (!keepDocumentOnFailure)
+                {
+                    ResetToUntitled();
+                }
+
                 ShowMessage(StringKeys.FileTooLarge, path, MessageKind.Warning);
                 return LoadOutcome.FailedAndReported;
             }
@@ -395,7 +400,7 @@ public sealed class DocumentService
     public bool RestoreAutosavedText(string textPath, string? documentPath, TextEncodingKind encoding, FileStamp? fileStamp = null)
     {
         ArgumentNullException.ThrowIfNull(textPath);
-        var outcome = Read(textPath, TextEncodingKind.Utf16LE, autosaved: true, out var document);
+        var outcome = Read(textPath, TextEncodingKind.Utf16LE, autosaved: true, keepDocumentOnFailure: false, out var document);
         if (outcome == LoadOutcome.OpenFailed)
         {
             ShowFileError(textPath, LastOpenError);
@@ -420,6 +425,82 @@ public sealed class DocumentService
         _editor.Modified = true;
         UpdateTitle();
         _d.StatusBar.UpdateAll();
+        return true;
+    }
+
+    /// <summary>
+    /// Deliberate addition (parity.md), File > Discard Changes: back to the file as it is on disk, or to
+    /// an empty page for an untitled document, without a question. The text is replaced as one undoable
+    /// step, so Undo brings the edits back until the window closes. A file that cannot be read leaves
+    /// the text and its note alone. A file unchanged on disk keeps the document's encoding, which the
+    /// user may have chosen by hand; a changed one is detected as a fresh open does. A <c>.LOG</c> file
+    /// gets no stamp, which would make it dirty again.
+    /// </summary>
+    public void DiscardChanges()
+    {
+        if (!IsDirty)
+        {
+            return;
+        }
+
+        if (State.IsUntitled || State.Path is not { } path)
+        {
+            if (ReplaceTextAsClean("", new(0, 0)))
+            {
+                State.CurrentEncoding = State.DefaultEncoding;
+                _d.StatusBar.UpdateAll();
+            }
+
+            return;
+        }
+
+        // Before the read, as in Load: a write that lands during it then counts as a change.
+        var stamp = _d.FileSystem.GetStamp(path);
+        var encoding = stamp == State.KnownFileStamp ? State.CurrentEncoding : TextEncodingKind.Detect;
+        var outcome = Read(path, encoding, autosaved: false, keepDocumentOnFailure: true, out var document);
+        if (outcome != LoadOutcome.Loaded)
+        {
+            if (outcome == LoadOutcome.OpenFailed)
+            {
+                ShowFileError(path, LastOpenError);
+            }
+
+            return;
+        }
+
+        string text;
+        using (document.Buffer)
+        {
+            text = document.Buffer.Chars[..document.Length].ToString();
+        }
+
+        if (ReplaceTextAsClean(text, _editor.Selection))
+        {
+            State.CurrentEncoding = document.Encoding;
+            State.KnownFileStamp = stamp;
+            _d.StatusBar.UpdateAll();
+        }
+    }
+
+    /// <summary>
+    /// Replaces the whole text as one undoable step and marks it clean. When the editor runs out of
+    /// memory it has told the user through <see cref="IEditorSurface.OutOfSpace"/>, and the document
+    /// stays dirty, so its note is not deleted.
+    /// </summary>
+    /// <returns>False when the editor did not take the whole text.</returns>
+    private bool ReplaceTextAsClean(string text, TextRange selection)
+    {
+        _editor.SetSelection(0, -1);
+        _editor.ReplaceSelection(text, canUndo: true);
+        if (_editor.TextLength != text.Length)
+        {
+            return false;
+        }
+
+        _editor.Modified = false;
+        UpdateTitle();
+        _editor.SetSelection(selection.Start, selection.End);
+        _editor.ScrollCaret();
         return true;
     }
 

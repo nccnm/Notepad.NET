@@ -53,6 +53,9 @@ public enum CommandId
     RecentFile9 = 0x68,
     RecentFile10 = 0x69,
     ClearRecentFiles = 0x6A,
+
+    /// <summary>Port addition (File > Discard Changes); not in the original.</summary>
+    DiscardChanges = 0x6B,
     Cut = 0x300,
     Copy = 0x301,
     Paste = 0x302,

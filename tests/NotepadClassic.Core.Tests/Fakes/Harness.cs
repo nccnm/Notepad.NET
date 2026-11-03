@@ -16,7 +16,7 @@ namespace NotepadClassic.Core.Tests.Fakes;
 /// <summary>Document service, commands and every fake wired together like the app does.</summary>
 internal sealed class Harness
 {
-    public Harness(string text = "", ManagedCodePageConverter? converter = null, AppOptions? options = null)
+    public Harness(string text = "", ManagedCodePageConverter? converter = null, AppOptions? options = null, ITextBufferFactory? buffers = null)
     {
         Editor = new FakeEditor(text);
         Converter = converter ?? new ManagedCodePageConverter(1252);
@@ -27,7 +27,7 @@ internal sealed class Harness
         RecentFiles = new RecentFilesService(RecentStore);
         Documents = new DocumentService(
             new DocumentServiceDependencies(
-                Editor, Window, Files, ManagedTextBufferFactory.Instance, detector,
+                Editor, Window, Files, buffers ?? ManagedTextBufferFactory.Instance, detector,
                 new DocumentLoader(detector, new TextDecoder(Converter)), new TextEncoder(Converter),
                 Dialogs, ResxStrings.Instance, new FakeFileTitles(), SystemMessages, AccessPolicy, Shell, TimeDate, StatusBar, RecentFiles),
             State);
