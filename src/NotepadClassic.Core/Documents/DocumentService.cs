@@ -52,6 +52,9 @@ public sealed class DocumentService
     private readonly DocumentServiceDependencies _d;
     private readonly IEditorSurface _editor;
 
+    /// <summary>A report of <see cref="NotifyIfChangedOutside"/> is on screen.</summary>
+    private bool _reportingChange;
+
     public DocumentService(DocumentServiceDependencies dependencies, DocumentState state)
     {
         ArgumentNullException.ThrowIfNull(dependencies);
@@ -93,8 +96,9 @@ public sealed class DocumentService
     /// <summary>
     /// <c>CheckSave</c>: true lets the caller go on, false means the user cancelled. Asks with
     /// string 3001 naming <c>Untitled</c> or the full path. Save writes a named document straight
-    /// away with the current encoding; an untitled document, or a failed write, goes through a
-    /// Save As loop that reports each failure and offers the chosen name again.
+    /// away with the current encoding, after <see cref="AskIfChangedOnDisk"/>; an untitled document,
+    /// a failed write, or that question's Save As goes through a Save As loop that reports each
+    /// failure and offers the chosen name again.
     /// </summary>
     public bool CheckSave()
     {
@@ -121,7 +125,14 @@ public sealed class DocumentService
             return choice == SaveChangesChoice.DontSave;
         }
 
-        if (!State.IsUntitled && State.Path is not null && SaveFile(State.Path, isSaveAs: false, State.CurrentEncoding).Succeeded)
+        var changed = AskIfChangedOnDisk();
+        if (changed == FileChangedChoice.Cancel)
+        {
+            return false;
+        }
+
+        if (changed == FileChangedChoice.Overwrite && !State.IsUntitled && State.Path is not null
+            && SaveFile(State.Path, isSaveAs: false, State.CurrentEncoding).Succeeded)
         {
             UpdateTitle();
             return true;
@@ -174,6 +185,7 @@ public sealed class DocumentService
         _editor.Clear();
         State.IsUntitled = true;
         State.Path = null;
+        State.KnownFileStamp = null;
         UpdateTitle();
         _editor.SetSelection(0, 0);
         _editor.ScrollCaret();
@@ -284,6 +296,8 @@ public sealed class DocumentService
     public LoadOutcome Load(string path, TextEncodingKind forcedEncoding)
     {
         ArgumentNullException.ThrowIfNull(path);
+        // Before the read: a write that lands during it then counts as a change, not as what was read.
+        var stamp = _d.FileSystem.GetStamp(path);
         var outcome = Read(path, forcedEncoding, autosaved: false, out var document);
         if (outcome != LoadOutcome.Loaded)
         {
@@ -293,6 +307,7 @@ public sealed class DocumentService
         State.CurrentEncoding = document.Encoding;
         _editor.Modified = false;
         State.Path = path;
+        State.KnownFileStamp = stamp;
         State.IsUntitled = false;
         UpdateTitle();
         if (!_editor.LoadBuffer(document.Buffer, document.Length))
@@ -374,8 +389,10 @@ public sealed class DocumentService
     /// not added to Recent Documents.
     /// </summary>
     /// <param name="documentPath">Null for an untitled document.</param>
+    /// <param name="fileStamp">The file as the document knew it when the text was autosaved, so a
+    /// change made while the app was closed is still noticed.</param>
     /// <returns>False when the text could not be loaded; the user has been told.</returns>
-    public bool RestoreAutosavedText(string textPath, string? documentPath, TextEncodingKind encoding)
+    public bool RestoreAutosavedText(string textPath, string? documentPath, TextEncodingKind encoding, FileStamp? fileStamp = null)
     {
         ArgumentNullException.ThrowIfNull(textPath);
         var outcome = Read(textPath, TextEncodingKind.Utf16LE, autosaved: true, out var document);
@@ -398,6 +415,7 @@ public sealed class DocumentService
 
         State.Path = documentPath;
         State.IsUntitled = documentPath is null;
+        State.KnownFileStamp = documentPath is null ? null : fileStamp;
         State.CurrentEncoding = encoding;
         _editor.Modified = true;
         UpdateTitle();
@@ -405,17 +423,120 @@ public sealed class DocumentService
         return true;
     }
 
-    /// <summary>File > Save: a named document is written with the current encoding; when that
-    /// fails (read-only file, for example) it falls through to Save As without an error.</summary>
+    /// <summary>File > Save: a named document is written with the current encoding, after
+    /// <see cref="AskIfChangedOnDisk"/>; when the write fails (read-only file, for example) it falls
+    /// through to Save As without an error.</summary>
     public void Save()
     {
-        if (!State.IsUntitled && State.Path is not null && SaveFile(State.Path, isSaveAs: false, State.CurrentEncoding).Succeeded)
+        var changed = AskIfChangedOnDisk();
+        if (changed == FileChangedChoice.Cancel)
+        {
+            return;
+        }
+
+        if (changed == FileChangedChoice.Overwrite && !State.IsUntitled && State.Path is not null
+            && SaveFile(State.Path, isSaveAs: false, State.CurrentEncoding).Succeeded)
         {
             UpdateTitle();
             return;
         }
 
         SaveAs();
+    }
+
+    /// <summary>
+    /// Deliberate addition (parity.md): reports a change another program made to the document's file,
+    /// once per change. What happens to the file while the report is on screen is not reported again:
+    /// the answer covers it, and Reload reads the newest version. Keep leaves
+    /// <see cref="DocumentState.KnownFileStamp"/> alone, so Save still asks before overwriting.
+    /// </summary>
+    public void NotifyIfChangedOutside()
+    {
+        if (_reportingChange || State.IsUntitled || State.Path is not { } path || State.KnownFileStamp is not { } known)
+        {
+            return;
+        }
+
+        var current = _d.FileSystem.GetStamp(path);
+        if (current == State.SeenFileStamp || (current is null && _d.FileSystem.Exists(path)))
+        {
+            return;
+        }
+
+        State.SeenFileStamp = current;
+        if (current == known)
+        {
+            return;
+        }
+
+        var reload = false;
+        _reportingChange = true;
+        try
+        {
+            if (current is null)
+            {
+                ShowMessage(StringKeys.FileGoneNotice, path, MessageKind.Warning);
+            }
+            else
+            {
+                var dirty = IsDirty;
+                var key = dirty ? StringKeys.FileChangedReloadLosing : StringKeys.FileChangedReload;
+                reload = _d.Dialogs.AskReload(MessageText.FormatInserts(_d.Strings.GetString(key), path), preferReload: !dirty);
+            }
+        }
+        finally
+        {
+            _reportingChange = false;
+        }
+
+        State.SeenFileStamp = _d.FileSystem.GetStamp(path);
+        if (reload)
+        {
+            Reload(path);
+        }
+    }
+
+    /// <summary>Reads the file again, detecting its encoding as a fresh open does, with the caret where it was.</summary>
+    private void Reload(string path)
+    {
+        var selection = _editor.Selection;
+        var outcome = Load(path, TextEncodingKind.Detect);
+        if (outcome == LoadOutcome.OpenFailed)
+        {
+            ShowFileError(path, LastOpenError);
+        }
+        else if (outcome == LoadOutcome.Loaded && !_editor.Modified)
+        {
+            // A .LOG file got its stamp at the end, where the caret belongs.
+            _editor.SetSelection(selection.Start, selection.End);
+            _editor.ScrollCaret();
+        }
+    }
+
+    /// <summary>
+    /// Deliberate addition (parity.md): before a Save writes over the document's file, asks when the
+    /// file is no longer what this document last read or wrote. Nothing is asked when there is nothing
+    /// to lose: an untitled document, a file that is gone, or a file whose earlier state is unknown.
+    /// Save As is not covered, its dialog already asks before replacing a file.
+    /// </summary>
+    /// <returns><see cref="FileChangedChoice.Overwrite"/> when the save may go ahead.</returns>
+    private FileChangedChoice AskIfChangedOnDisk()
+    {
+        if (State.IsUntitled || State.Path is not { } path || State.KnownFileStamp is not { } known
+            || _d.FileSystem.GetStamp(path) is not { } current || current == known)
+        {
+            return FileChangedChoice.Overwrite;
+        }
+
+        State.IsSaveDialogOpen = true;
+        try
+        {
+            return _d.Dialogs.AskFileChanged(MessageText.FormatInserts(_d.Strings.GetString(StringKeys.FileChangedQuestion), path));
+        }
+        finally
+        {
+            State.IsSaveDialogOpen = false;
+        }
     }
 
     /// <summary>File > Save As: suggested name <c>*.txt</c> when untitled; a failed save shows the file error.</summary>
@@ -540,6 +661,12 @@ public sealed class DocumentService
                 TryDelete(path);
             }
 
+            // This save may have written a BOM or part of the text: that is no change by another program.
+            if (string.Equals(path, State.Path, StringComparison.OrdinalIgnoreCase) && State.KnownFileStamp is not null)
+            {
+                State.KnownFileStamp = _d.FileSystem.GetStamp(path);
+            }
+
             if (wordWrap)
             {
                 _editor.SetSelection(selection.Start, selection.End);
@@ -552,6 +679,7 @@ public sealed class DocumentService
         State.CurrentEncoding = encoding;
         _editor.Modified = false;
         State.IsUntitled = false;
+        State.KnownFileStamp = _d.FileSystem.GetStamp(path);
         if (encoding == TextEncodingKind.Ansi && acceptedLoss)
         {
             // Shows what was really written; a .LOG file gets one more stamp here.

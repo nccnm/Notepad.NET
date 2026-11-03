@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using NotepadClassic.Core.IO;
 using NotepadClassic.Core.Text;
 
 namespace NotepadClassic.Core.Autosave;
@@ -19,8 +20,11 @@ namespace NotepadClassic.Core.Autosave;
 /// <param name="SelectionStart">Selection of dirty text, set again after the restore. A manifest
 /// written before this field existed reads as 0.</param>
 /// <param name="SelectionEnd">End of that selection.</param>
+/// <param name="FileStamp">The document's file as it knew it, for dirty text with a path, so that a
+/// change made while the app is closed is noticed. Null in a manifest written before this field existed.</param>
 public sealed record AutosaveManifest(
-    int Version, TextEncodingKind Encoding, string? DocumentPath, bool HasText, string? CurrentDirectory, int SelectionStart = 0, int SelectionEnd = 0)
+    int Version, TextEncodingKind Encoding, string? DocumentPath, bool HasText, string? CurrentDirectory, int SelectionStart = 0, int SelectionEnd = 0,
+    FileStamp? FileStamp = null)
 {
     public const int CurrentVersion = 1;
 

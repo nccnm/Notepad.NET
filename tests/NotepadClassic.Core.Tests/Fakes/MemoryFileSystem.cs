@@ -64,6 +64,26 @@ internal sealed class MemoryFileSystem : IFileSystem
         Files.Remove(path);
     }
 
+    /// <summary>Paths whose stamp cannot be read.</summary>
+    public HashSet<string> StampErrors { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Added to the stamp's time of a path: a write that keeps the content, as a touch does.</summary>
+    public Dictionary<string, long> Touches { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Follows the content, so a test changing <see cref="Files"/> changes the stamp as a
+    /// real write changes the time.</summary>
+    public FileStamp? GetStamp(string path)
+    {
+        if (StampErrors.Contains(path) || !Files.TryGetValue(path, out var bytes))
+        {
+            return null;
+        }
+
+        var hash = new HashCode();
+        hash.AddBytes(bytes);
+        return new FileStamp(hash.ToHashCode() + Touches.GetValueOrDefault(path), bytes.Length);
+    }
+
     public string TextOf(string path, System.Text.Encoding encoding) => encoding.GetString(Files[path]);
 
     private static IOException Fail(int error) => new($"Win32 error {error}", FileErrors.ToHResult(error));

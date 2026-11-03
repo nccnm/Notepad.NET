@@ -7,6 +7,43 @@ using NotepadClassic.Platform.Interop;
 namespace NotepadClassic.Platform.IO;
 
 /// <summary>
+/// <see cref="FileSystemWatcher"/> on the folder of the file: no polling, and it also sees an editor
+/// that saves by replacing the file. Its error event, a lost notification, counts as a change.
+/// </summary>
+public sealed class Win32FileWatcher : IFileWatcher
+{
+    public IDisposable? Watch(string path, Action changed)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(changed);
+        var folder = Path.GetDirectoryName(path);
+        if (string.IsNullOrEmpty(folder))
+        {
+            return null;
+        }
+
+        try
+        {
+            var watcher = new FileSystemWatcher(folder, Path.GetFileName(path))
+            {
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.CreationTime,
+            };
+            watcher.Changed += (_, _) => changed();
+            watcher.Created += (_, _) => changed();
+            watcher.Deleted += (_, _) => changed();
+            watcher.Renamed += (_, _) => changed();
+            watcher.Error += (_, _) => changed();
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+        catch (Exception e) when (e is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+}
+
+/// <summary>
 /// File access with the same <c>CreateFileW</c> modes as the original: reads share read and
 /// write, saves open <c>OPEN_ALWAYS</c> and overwrite in place.
 /// </summary>
@@ -40,6 +77,28 @@ public sealed class Win32FileSystem : IFileSystem
         if (!Kernel32.DeleteFile(path))
         {
             throw ToIOException(Marshal.GetLastPInvokeError(), path);
+        }
+    }
+
+    /// <summary>Asks a handle rather than the directory entry, which can lag behind while another
+    /// program holds the file open. Access 0 opens a file even when its holder shares nothing.</summary>
+    public FileStamp? GetStamp(string path)
+    {
+        using var handle = Kernel32.CreateFile(
+            path, 0, Kernel32.FILE_SHARE_READ | Kernel32.FILE_SHARE_WRITE | Kernel32.FILE_SHARE_DELETE, 0,
+            Kernel32.OPEN_EXISTING, Kernel32.FILE_ATTRIBUTE_NORMAL, 0);
+        if (handle.IsInvalid)
+        {
+            return null;
+        }
+
+        try
+        {
+            return new FileStamp(File.GetLastWriteTimeUtc(handle).Ticks, RandomAccess.GetLength(handle));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            return null;
         }
     }
 

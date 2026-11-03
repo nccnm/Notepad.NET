@@ -63,6 +63,14 @@ public static class StringKeys
     public const string SaveChangesQuestion = nameof(SaveChangesQuestion);       // MUI 3001
     public const string SaveButton = nameof(SaveButton);                         // MUI 3002
     public const string DontSaveButton = nameof(DontSaveButton);                 // MUI 3003
+    public const string FileChangedQuestion = nameof(FileChangedQuestion);       // port addition
+    public const string OverwriteButton = nameof(OverwriteButton);               // port addition
+    public const string SaveAsButton = nameof(SaveAsButton);                     // port addition
+    public const string FileChangedReload = nameof(FileChangedReload);           // port addition
+    public const string FileChangedReloadLosing = nameof(FileChangedReloadLosing); // port addition
+    public const string FileGoneNotice = nameof(FileGoneNotice);                 // port addition
+    public const string ReloadButton = nameof(ReloadButton);                     // port addition
+    public const string KeepButton = nameof(KeepButton);                         // port addition
     public const string CannotFind = nameof(CannotFind);                         // MUI 6
     public const string GoToCaption = nameof(GoToCaption);                       // MUI 30
     public const string GoToBeyondEnd = nameof(GoToBeyondEnd);                   // MUI 31

@@ -244,13 +244,14 @@ internal sealed partial class AppSession : IDisposable
     }
 
     /// <summary>A top-level window of this process whose title is <paramref name="title"/>.</summary>
-    public Window WaitForWindow(string title) =>
-        Wait.For(
-            () => _automation.GetDesktop()
-                .FindAllChildren(c => c.ByProcessId(_process.Id).And(c.ByName(title)))
-                .FirstOrDefault()?.AsWindow()
-                ?? Window.FindFirstChild(c => c.ByName(title).And(c.ByControlType(ControlType.Window)))?.AsWindow(),
-            $"the window \"{title}\"");
+    public Window WaitForWindow(string title) => Wait.For(() => FindWindow(title), $"the window \"{title}\"");
+
+    /// <summary>The same window if it is open now, otherwise null.</summary>
+    public Window? FindWindow(string title) =>
+        _automation.GetDesktop()
+            .FindAllChildren(c => c.ByProcessId(_process.Id).And(c.ByName(title)))
+            .FirstOrDefault()?.AsWindow()
+        ?? Window.FindFirstChild(c => c.ByName(title).And(c.ByControlType(ControlType.Window)))?.AsWindow();
 
     /// <summary>Waits for the process to end on its own.</summary>
     public void WaitForExit() => Wait.Until(() => _process.HasExited, "the app to exit");

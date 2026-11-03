@@ -38,6 +38,32 @@ internal sealed class FakeDialogs : IDialogService
         return SaveChangesAnswers.Dequeue();
     }
 
+    public Queue<FileChangedChoice> FileChangedAnswers { get; } = new();
+
+    public List<string> FileChangedQuestions { get; } = [];
+
+    public Action? DuringFileChanged { get; set; }
+
+    public FileChangedChoice AskFileChanged(string instruction)
+    {
+        FileChangedQuestions.Add(instruction);
+        DuringFileChanged?.Invoke();
+        return FileChangedAnswers.Dequeue();
+    }
+
+    public Queue<bool> ReloadAnswers { get; } = new();
+
+    public List<(string Text, bool PreferReload)> ReloadQuestions { get; } = [];
+
+    public Action? DuringReloadQuestion { get; set; }
+
+    public bool AskReload(string instruction, bool preferReload)
+    {
+        ReloadQuestions.Add((instruction, preferReload));
+        DuringReloadQuestion?.Invoke();
+        return ReloadAnswers.Dequeue();
+    }
+
     public FileDialogResult ShowOpen()
     {
         OpenShown++;

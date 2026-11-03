@@ -136,9 +136,11 @@ internal static partial class User32
     public const uint CF_TEXT = 1;
     public const uint MB_OKCANCEL = 0x1;
     public const uint MB_YESNOCANCEL = 0x3;
+    public const uint MB_YESNO = 0x4;
     public const uint MB_ICONHAND = 0x10;
     public const uint MB_ICONQUESTION = 0x20;
     public const uint MB_ICONEXCLAMATION = 0x30;
+    public const uint MB_DEFBUTTON2 = 0x100;
     public const uint MB_SYSTEMMODAL = 0x1000;
     public const int IDOK = 1;
     public const int IDCANCEL = 2;
@@ -266,6 +268,7 @@ internal static partial class Comdlg32
 internal static partial class Comctl32
 {
     public const int TDCBF_CANCEL_BUTTON = 0x8;
+    public const int TDF_ALLOW_DIALOG_CANCELLATION = 0x8;
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct TASKDIALOG_BUTTON

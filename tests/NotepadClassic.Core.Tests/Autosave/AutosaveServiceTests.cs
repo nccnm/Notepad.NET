@@ -206,7 +206,7 @@ public sealed class AutosaveServiceTests
 
         h.Autosave.Armed.Should().BeTrue();
         h.AutosaveStore.TextOf(Id).Should().Be("unsaved text");
-        h.AutosaveStore.ManifestOf(Id).Should().Be(Manifest(FilePath, hasText: true, TextEncodingKind.Utf16BE));
+        h.AutosaveStore.ManifestOf(Id).Should().Be(Manifest(FilePath, hasText: true, TextEncodingKind.Utf16BE) with { FileStamp = h.State.KnownFileStamp });
     }
 
     [Fact]
@@ -609,7 +609,7 @@ public sealed class AutosaveServiceTests
         h.Autosave.Snapshot();
 
         h.AutosaveStore.TextOf(Id).Should().Be("unsaved text");
-        h.AutosaveStore.ManifestOf(Id).Should().Be(Manifest(FilePath, hasText: true, TextEncodingKind.Utf8) with { SelectionStart = 2, SelectionEnd = 5 });
+        h.AutosaveStore.ManifestOf(Id).Should().Be(Manifest(FilePath, hasText: true, TextEncodingKind.Utf8) with { SelectionStart = 2, SelectionEnd = 5, FileStamp = h.State.KnownFileStamp });
         h.AutosaveStore.Locks.Should().Contain(Id);
     }
 
@@ -713,6 +713,85 @@ public sealed class AutosaveServiceTests
         h.Autosave.Dispose();
 
         h.AutosaveStore.Locks.Should().BeEmpty();
+    }
+
+    // ---- A file changed while the app was closed ----
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_note_remembers_its_file_so_a_change_while_closed_is_noticed()
+    {
+        var first = DirtyNamed("mine");
+        first.Autosave.ConfirmClose().Should().BeTrue();
+        var manifest = first.AutosaveStore.ManifestOf(Id)!;
+        manifest.FileStamp.Should().Be(first.State.KnownFileStamp).And.NotBeNull();
+
+        var second = new Harness();
+        second.Files.Files[FilePath] = Encoding.UTF8.GetBytes("theirs");
+        Seed(second, OtherId, manifest, "mine");
+        second.Autosave.Restore(OtherId).Should().Be(AutosaveRestoreOutcome.Restored);
+        second.Dialogs.ReloadAnswers.Enqueue(false);
+        second.Documents.NotifyIfChangedOutside();
+        second.Dialogs.ReloadQuestions.Should().ContainSingle("it is reported as soon as the note is back");
+        second.Editor.Text.Should().Be("mine");
+        second.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Cancel);
+
+        second.Documents.Save();
+
+        second.Dialogs.FileChangedQuestions.Should().ContainSingle();
+        second.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("theirs");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_restored_note_keeps_its_stamp_through_the_next_snapshot()
+    {
+        var h = new Harness();
+        var stamp = new IO.FileStamp(123, 4);
+        Seed(h, OtherId, Manifest(FilePath, hasText: true) with { FileStamp = stamp }, "mine");
+
+        h.Autosave.Restore(OtherId).Should().Be(AutosaveRestoreOutcome.Restored);
+
+        h.AutosaveStore.ManifestOf(Id)!.FileStamp.Should().Be(stamp);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_manifest_without_a_stamp_restores_without_a_question()
+    {
+        var h = new Harness();
+        h.Files.Files[FilePath] = Encoding.UTF8.GetBytes("theirs");
+        Seed(h, OtherId, Manifest(FilePath, hasText: true, TextEncodingKind.Utf8), "mine");
+        h.Autosave.Restore(OtherId).Should().Be(AutosaveRestoreOutcome.Restored);
+
+        h.Documents.Save();
+
+        h.Dialogs.FileChangedQuestions.Should().BeEmpty();
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("mine");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Clean_and_untitled_documents_save_no_stamp()
+    {
+        var clean = new Harness();
+        clean.OpenSaved(FilePath, "saved");
+        clean.Autosave.Save().Should().BeTrue();
+        clean.AutosaveStore.ManifestOf(Id)!.FileStamp.Should().BeNull();
+
+        var untitled = new Harness();
+        untitled.Editor.Type("draft");
+        untitled.Autosave.Save().Should().BeTrue();
+        untitled.AutosaveStore.ManifestOf(Id)!.FileStamp.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_stamp_round_trips_through_the_manifest()
+    {
+        var manifest = Manifest(FilePath, hasText: true) with { FileStamp = new IO.FileStamp(638_000_000_000_000_001, 42) };
+
+        AutosaveManifest.Parse(manifest.ToJson()).Should().Be(manifest);
     }
 
     // ---- Closed notes ----

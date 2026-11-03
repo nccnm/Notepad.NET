@@ -156,6 +156,38 @@
     <value>Do&amp;n't Save</value>
     <comment>MUI 3003</comment>
   </data>
+  <data name="FileChangedQuestion" xml:space="preserve">
+    <value>%1 was changed by another program. Do you want to overwrite it with your version?</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="OverwriteButton" xml:space="preserve">
+    <value>&amp;Overwrite</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="SaveAsButton" xml:space="preserve">
+    <value>Save &amp;As...</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="FileChangedReload" xml:space="preserve">
+    <value>%1 was changed by another program. Do you want to reload it?</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="FileChangedReloadLosing" xml:space="preserve">
+    <value>%1 was changed by another program. Do you want to reload it and lose your unsaved changes?</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="FileGoneNotice" xml:space="preserve">
+    <value>%1 was deleted or moved by another program. Your text is still here, and Save creates the file again.</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="ReloadButton" xml:space="preserve">
+    <value>&amp;Reload</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="KeepButton" xml:space="preserve">
+    <value>&amp;Keep</value>
+    <comment>Port addition</comment>
+  </data>
   <data name="CannotFind" xml:space="preserve">
     <value>Cannot find &quot;%%&quot;</value>
     <comment>MUI 6</comment>

@@ -74,6 +74,10 @@ close). The question comes back only when the text cannot be written there. A lo
 Manager close (Windows Update, an installer) keep the text the same way, and Windows can also restart the app with
 `RestartByRestartManager:<id>`. `NOTEPADCLASSIC_AUTOSAVE_DIR` names another folder (tests use temporary ones).
 
+When another program changes or deletes the open file the window says so right away and offers to reload it,
+including a change made while the app was closed; further changes while that question is open bring no second one.
+Save also asks before writing over such a file: Overwrite, Save As (the default) or Cancel.
+
 Links the original hard-codes are read from `AssemblyMetadata` in the app project: `HelpUrl`, `FeedbackUrl` and
 `PageSetupHelpUrl` (the "Input Values" link of Page Setup). An empty value hides the menu item or the link.
 

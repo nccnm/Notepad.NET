@@ -1,3 +1,4 @@
+using NotepadClassic.Core.IO;
 using NotepadClassic.Core.Text;
 
 namespace NotepadClassic.Core.Documents;
@@ -10,6 +11,22 @@ public sealed class DocumentState(TextEncodingKind defaultEncoding)
 
     /// <summary>No file name yet, so Save becomes Save As.</summary>
     public bool IsUntitled { get; set; } = true;
+
+    /// <summary>The file as this document last read or wrote it; null when untitled or unknown.
+    /// Save asks before overwriting a file that no longer matches.</summary>
+    public FileStamp? KnownFileStamp
+    {
+        get;
+        set
+        {
+            field = value;
+            SeenFileStamp = value;
+        }
+    }
+
+    /// <summary>The file as last reported to the user, null once reported gone: each change outside
+    /// is reported once, while Save goes on comparing with <see cref="KnownFileStamp"/>.</summary>
+    public FileStamp? SeenFileStamp { get; set; }
 
     /// <summary>Current encoding: status bar, Save, Save As preselection.</summary>
     public TextEncodingKind CurrentEncoding { get; set; } = defaultEncoding;

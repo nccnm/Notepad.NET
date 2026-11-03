@@ -131,6 +131,24 @@ internal sealed class FakeDialogs : IDialogService
         return SaveChanges.Dequeue();
     }
 
+    public Queue<FileChangedChoice> FileChanged { get; } = new();
+
+    public FileChangedChoice AskFileChanged(string instruction)
+    {
+        Messages.Add(instruction);
+        return FileChanged.Dequeue();
+    }
+
+    public List<string> ReloadQuestions { get; } = [];
+
+    public Queue<bool> ReloadAnswers { get; } = new();
+
+    public bool AskReload(string instruction, bool preferReload)
+    {
+        ReloadQuestions.Add(instruction);
+        return ReloadAnswers.Count > 0 && ReloadAnswers.Dequeue();
+    }
+
     public FileDialogResult ShowOpen() => Open.Dequeue();
 
     public FileDialogResult ShowSaveAs(string suggestedName, TextEncodingKind initialEncoding) => SaveAs.Dequeue();

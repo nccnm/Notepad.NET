@@ -143,6 +143,11 @@ public sealed class RecentFilesTests
         Wait.Until(() => app.Text == "text", "the file text");
         File.Delete(path);
 
+        // The open document's file is gone: the window says so before anything else.
+        var notice = app.WaitForWindow("Notepad Classic");
+        Wait.For(() => notice.FindFirstDescendant(c => c.ByName("OK"))?.AsButton(), "OK").Invoke();
+        Wait.Until(() => AppSession.Exists(notice) == false, "the notice to close");
+
         OpenSubmenu(app);
         // A UIA Invoke would wait for the message box to close.
         Keyboard.Type(VirtualKeyShort.KEY_1);

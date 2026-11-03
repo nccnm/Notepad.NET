@@ -9,6 +9,7 @@ internal static partial class Kernel32
     public const uint GENERIC_WRITE = 0x4000_0000;
     public const uint FILE_SHARE_READ = 0x1;
     public const uint FILE_SHARE_WRITE = 0x2;
+    public const uint FILE_SHARE_DELETE = 0x4;
     public const uint OPEN_EXISTING = 3;
     public const uint OPEN_ALWAYS = 4;
     public const uint FILE_ATTRIBUTE_NORMAL = 0x80;

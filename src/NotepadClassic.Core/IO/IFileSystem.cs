@@ -22,7 +22,26 @@ public interface IFileSystem
     bool Exists(string path);
 
     void Delete(string path);
+
+    /// <summary>What identifies this version of the file now, or null when it is missing or cannot
+    /// be read. Works while another program has the file open, even without sharing.</summary>
+    FileStamp? GetStamp(string path);
 }
+
+/// <summary>Tells when a file may have changed.</summary>
+public interface IFileWatcher
+{
+    /// <summary>
+    /// Calls <paramref name="changed"/>, on any thread, whenever <paramref name="path"/> may have been
+    /// written, replaced, renamed or deleted, until the result is disposed. A call only means "look
+    /// again". Null when the file's folder cannot be watched.
+    /// </summary>
+    IDisposable? Watch(string path, Action changed);
+}
+
+/// <summary>Last write time and length of a file: when either differs from an earlier stamp, the
+/// file was written in between.</summary>
+public readonly record struct FileStamp(long LastWriteUtcTicks, long Length);
 
 /// <summary>Content of a file opened for reading.</summary>
 public interface IFileContent : IDisposable

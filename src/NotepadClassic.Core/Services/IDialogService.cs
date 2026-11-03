@@ -11,6 +11,14 @@ public enum SaveChangesChoice
     Cancel,
 }
 
+/// <summary>Buttons of the "changed by another program" task dialog.</summary>
+public enum FileChangedChoice
+{
+    Overwrite,
+    SaveAs,
+    Cancel,
+}
+
 public enum DialogOutcome
 {
     Ok,
@@ -70,6 +78,15 @@ public interface IDialogService
     /// <summary>Task dialog with "&amp;Save", "Do&amp;n't Save" and Cancel; Save is the default.</summary>
     /// <param name="instruction">String 3001 with the document name already inserted.</param>
     SaveChangesChoice AskSaveChanges(string instruction);
+
+    /// <summary>Task dialog with a warning icon, "&amp;Overwrite", "Save &amp;As..." and Cancel. Save As
+    /// is the default, so Enter cannot destroy the other program's version.</summary>
+    FileChangedChoice AskFileChanged(string instruction);
+
+    /// <summary>Task dialog with a warning icon, "&amp;Reload" and "&amp;Keep". True for Reload; Esc is Keep.</summary>
+    /// <param name="preferReload">Reload is the default button, otherwise Keep: with unsaved changes
+    /// Enter must not lose them.</param>
+    bool AskReload(string instruction, bool preferReload);
 
     /// <summary>File Open dialog with the "Encoding:" box, "Auto-Detect" preselected.</summary>
     FileDialogResult ShowOpen();

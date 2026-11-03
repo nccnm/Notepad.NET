@@ -23,7 +23,14 @@ public sealed unsafe class Win32DialogService(Func<nint> owner, ILocalizedString
 
     private const int SaveButtonId = 6;
     private const int DontSaveButtonId = 7;
+    private const int OverwriteButtonId = 6;
+    private const int SaveAsButtonId = 7;
+    private const int ReloadButtonId = 6;
+    private const int KeepButtonId = 7;
     private const int ApplicationIconId = 32512;
+
+    /// <summary><c>TD_WARNING_ICON</c>: <c>MAKEINTRESOURCEW(-1)</c>.</summary>
+    private const nint WarningIcon = 0xFFFF;
 
     private readonly Func<nint> _owner = owner;
     private readonly ILocalizedStrings _strings = strings;
@@ -37,27 +44,65 @@ public sealed unsafe class Win32DialogService(Func<nint> owner, ILocalizedString
     /// buttons "&amp;Save" (6), "Do&amp;n't Save" (7) and Cancel, Save the default. When the task
     /// dialog fails, a Yes/No/Cancel message box.
     /// </summary>
-    public SaveChangesChoice AskSaveChanges(string instruction)
+    public SaveChangesChoice AskSaveChanges(string instruction) =>
+        AskTwoButtons(
+            instruction, (SaveButtonId, StringKeys.SaveButton), (DontSaveButtonId, StringKeys.DontSaveButton), SaveButtonId, 0,
+            User32.MB_YESNOCANCEL | User32.MB_ICONQUESTION) switch
+        {
+            SaveButtonId => SaveChangesChoice.Save,
+            DontSaveButtonId => SaveChangesChoice.DontSave,
+            _ => SaveChangesChoice.Cancel,
+        };
+
+    /// <summary>
+    /// Task dialog: warning icon, title "Notepad Classic", the question as main instruction, buttons
+    /// "&amp;Overwrite" (6), "Save &amp;As..." (7) and Cancel, Save As the default. When the task dialog
+    /// fails, a Yes/No/Cancel message box on the same question, with No the default: its No is not
+    /// overwriting, and leads to Save As.
+    /// </summary>
+    public FileChangedChoice AskFileChanged(string instruction) =>
+        AskTwoButtons(
+            instruction, (OverwriteButtonId, StringKeys.OverwriteButton), (SaveAsButtonId, StringKeys.SaveAsButton), SaveAsButtonId, WarningIcon,
+            User32.MB_YESNOCANCEL | User32.MB_ICONEXCLAMATION | User32.MB_DEFBUTTON2) switch
+        {
+            OverwriteButtonId => FileChangedChoice.Overwrite,
+            SaveAsButtonId => FileChangedChoice.SaveAs,
+            _ => FileChangedChoice.Cancel,
+        };
+
+    /// <summary>Task dialog: warning icon, title "Notepad Classic", "&amp;Reload" (6) and "&amp;Keep" (7), no
+    /// Cancel button but Esc is Keep. When the task dialog fails, a Yes/No message box on the same question.</summary>
+    public bool AskReload(string instruction, bool preferReload) =>
+        AskTwoButtons(
+            instruction, (ReloadButtonId, StringKeys.ReloadButton), (KeepButtonId, StringKeys.KeepButton), preferReload ? ReloadButtonId : KeepButtonId, WarningIcon,
+            User32.MB_YESNO | User32.MB_ICONEXCLAMATION | (preferReload ? 0 : User32.MB_DEFBUTTON2), cancelButton: false) == ReloadButtonId;
+
+    /// <summary>The id of the button pressed. Ids 6 and 7 are also <c>IDYES</c> and <c>IDNO</c> of the
+    /// fallback message box.</summary>
+    private int AskTwoButtons(string instruction, (int Id, string TextKey) first, (int Id, string TextKey) second, int defaultButton, nint icon, uint fallbackFlags, bool cancelButton = true)
     {
         ArgumentNullException.ThrowIfNull(instruction);
         var title = Marshal.StringToCoTaskMemUni(Caption);
         var text = Marshal.StringToCoTaskMemUni(instruction);
-        var save = Marshal.StringToCoTaskMemUni(_strings.GetString(StringKeys.SaveButton));
-        var dontSave = Marshal.StringToCoTaskMemUni(_strings.GetString(StringKeys.DontSaveButton));
+        var firstText = Marshal.StringToCoTaskMemUni(_strings.GetString(first.TextKey));
+        var secondText = Marshal.StringToCoTaskMemUni(_strings.GetString(second.TextKey));
         try
         {
             var buttons = stackalloc Comctl32.TASKDIALOG_BUTTON[2];
-            buttons[0] = new() { nButtonID = SaveButtonId, pszButtonText = save };
-            buttons[1] = new() { nButtonID = DontSaveButtonId, pszButtonText = dontSave };
+            buttons[0] = new() { nButtonID = first.Id, pszButtonText = firstText };
+            buttons[1] = new() { nButtonID = second.Id, pszButtonText = secondText };
             var config = new Comctl32.TASKDIALOGCONFIG
             {
                 cbSize = (uint)sizeof(Comctl32.TASKDIALOGCONFIG),
                 hwndParent = _owner(),
-                dwCommonButtons = Comctl32.TDCBF_CANCEL_BUTTON,
+                dwFlags = cancelButton ? 0 : Comctl32.TDF_ALLOW_DIALOG_CANCELLATION,
+                dwCommonButtons = cancelButton ? Comctl32.TDCBF_CANCEL_BUTTON : 0,
                 pszWindowTitle = title,
+                hMainIcon = icon,
                 pszMainInstruction = text,
                 cButtons = 2,
                 pButtons = buttons,
+                nDefaultButton = defaultButton,
             };
             int button;
             int hr;
@@ -74,22 +119,17 @@ public sealed unsafe class Win32DialogService(Func<nint> owner, ILocalizedString
 
             if (hr < 0)
             {
-                button = User32.MessageBox(_owner(), instruction, Caption, User32.MB_YESNOCANCEL | User32.MB_ICONQUESTION);
+                button = User32.MessageBox(_owner(), instruction, Caption, fallbackFlags);
             }
 
-            return button switch
-            {
-                SaveButtonId => SaveChangesChoice.Save,
-                DontSaveButtonId => SaveChangesChoice.DontSave,
-                _ => SaveChangesChoice.Cancel,
-            };
+            return button;
         }
         finally
         {
             Marshal.FreeCoTaskMem(title);
             Marshal.FreeCoTaskMem(text);
-            Marshal.FreeCoTaskMem(save);
-            Marshal.FreeCoTaskMem(dontSave);
+            Marshal.FreeCoTaskMem(firstText);
+            Marshal.FreeCoTaskMem(secondText);
         }
     }
 

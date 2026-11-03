@@ -247,7 +247,7 @@ public sealed class AutosaveService : IDisposable
         var selection = _editor.Selection;
         var manifest = new AutosaveManifest(
             AutosaveManifest.CurrentVersion, state.CurrentEncoding, state.IsUntitled ? null : state.Path, dirty, _directory.Current,
-            dirty ? selection.Start : 0, dirty ? selection.End : 0);
+            dirty ? selection.Start : 0, dirty ? selection.End : 0, dirty ? state.KnownFileStamp : null);
         try
         {
             _lock ??= _store.TryLock(SessionId) ?? throw new IOException("This session's autosave entry is locked.");
@@ -407,7 +407,7 @@ public sealed class AutosaveService : IDisposable
         AutosaveRestoreOutcome outcome;
         if (manifest.HasText)
         {
-            if (!_documents.RestoreAutosavedText(_store.TextPath(id), manifest.DocumentPath, manifest.Encoding))
+            if (!_documents.RestoreAutosavedText(_store.TextPath(id), manifest.DocumentPath, manifest.Encoding, manifest.FileStamp))
             {
                 return AutosaveRestoreOutcome.Kept;
             }

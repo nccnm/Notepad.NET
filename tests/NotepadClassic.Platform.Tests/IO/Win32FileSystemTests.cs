@@ -15,6 +15,116 @@ public sealed class Win32FileSystemTests : IDisposable
     private string PathOf(string name) => Path.Combine(_dir, name);
 
     [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_stamp_follows_writes_and_is_null_for_a_missing_file()
+    {
+        var path = PathOf("s.txt");
+        _fs.GetStamp(path).Should().BeNull();
+
+        System.IO.File.WriteAllText(path, "abc");
+        var first = _fs.GetStamp(path);
+        first.Should().NotBeNull();
+        first!.Value.Length.Should().Be(3);
+        _fs.GetStamp(path).Should().Be(first, "nothing was written in between");
+
+        System.IO.File.WriteAllText(path, "abcd");
+        _fs.GetStamp(path).Should().NotBe(first);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_stamp_sees_a_write_of_the_same_length()
+    {
+        var path = PathOf("t.txt");
+        System.IO.File.WriteAllText(path, "abc");
+        System.IO.File.SetLastWriteTimeUtc(path, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        var first = _fs.GetStamp(path);
+
+        System.IO.File.WriteAllText(path, "xyz");
+
+        _fs.GetStamp(path).Should().NotBe(first);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_stamp_works_while_another_program_holds_the_file_without_sharing_and_sees_its_writes()
+    {
+        var path = PathOf("held.txt");
+        System.IO.File.WriteAllText(path, "abc");
+        var before = _fs.GetStamp(path);
+
+        using var holder = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None);
+        holder.Seek(0, SeekOrigin.End);
+        holder.WriteByte((byte)'d');
+        holder.Flush(flushToDisk: true);
+
+        _fs.GetStamp(path).Should().NotBeNull().And.NotBe(before);
+    }
+
+    private static void WaitForSignal(SemaphoreSlim signal, string what) =>
+        signal.Wait(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken).Should().BeTrue($"{what} should be noticed");
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_watcher_sees_writes_replacement_and_deletion_of_its_file_but_not_of_others()
+    {
+        var path = PathOf("watched.txt");
+        System.IO.File.WriteAllText(path, "a");
+        using var signal = new SemaphoreSlim(0);
+        using var watch = new Win32FileWatcher().Watch(path, () => signal.Release());
+        watch.Should().NotBeNull();
+
+        System.IO.File.WriteAllText(PathOf("other.txt"), "x");
+        signal.Wait(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken).Should().BeFalse("another file is not this one");
+
+        System.IO.File.WriteAllText(path, "ab");
+        WaitForSignal(signal, "a write");
+        Thread.Sleep(100);
+        while (signal.Wait(0, TestContext.Current.CancellationToken))
+        {
+        }
+
+        System.IO.File.WriteAllText(PathOf("new.tmp"), "abc");
+        System.IO.File.Move(PathOf("new.tmp"), path, overwrite: true);
+        WaitForSignal(signal, "a replacement");
+        Thread.Sleep(100);
+        while (signal.Wait(0, TestContext.Current.CancellationToken))
+        {
+        }
+
+        System.IO.File.Delete(path);
+        WaitForSignal(signal, "a deletion");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_disposed_watcher_is_silent_and_leaves_the_folder_free()
+    {
+        var folder = Directory.CreateDirectory(PathOf("sub")).FullName;
+        var path = Path.Combine(folder, "w.txt");
+        System.IO.File.WriteAllText(path, "a");
+        using var signal = new SemaphoreSlim(0);
+
+        new Win32FileWatcher().Watch(path, () => signal.Release())!.Dispose();
+        System.IO.File.WriteAllText(path, "ab");
+
+        signal.Wait(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken).Should().BeFalse();
+        Directory.Delete(folder, recursive: true);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_folder_that_cannot_be_watched_gives_no_watcher()
+    {
+        new Win32FileWatcher().Watch(PathOf(@"missing\x.txt"), () => { }).Should().BeNull();
+        new Win32FileWatcher().Watch("x.txt", () => { }).Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_directory_has_no_stamp() => _fs.GetStamp(_dir).Should().BeNull();
+
+    [Fact]
     public void Reads_whole_file_through_mapping_and_by_offset()
     {
         System.IO.File.WriteAllBytes(PathOf("a.txt"), [1, 2, 3, 4, 5]);

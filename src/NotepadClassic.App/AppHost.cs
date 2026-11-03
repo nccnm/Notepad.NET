@@ -32,13 +32,15 @@ internal sealed class AppHost : IDisposable
     private readonly ServiceProvider _services;
     private readonly CaretWatcher _caret;
     private readonly System.Windows.Forms.Timer _snapshots;
+    private readonly ExternalChangeMonitor _externalChanges;
 
     private AppHost(
         ServiceProvider services, MainForm window, CommandRegistry registry, CommandContext context, MenuBuilder menus, KeyDispatcher keys, CaretWatcher caret,
-        AutosaveService autosave, System.Windows.Forms.Timer snapshots)
+        AutosaveService autosave, System.Windows.Forms.Timer snapshots, ExternalChangeMonitor externalChanges)
     {
         Autosave = autosave;
         _snapshots = snapshots;
+        _externalChanges = externalChanges;
         _services = services;
         Window = window;
         Menus = menus;
@@ -59,6 +61,8 @@ internal sealed class AppHost : IDisposable
     public MenuBuilder Menus { get; }
 
     public AutosaveService Autosave { get; }
+
+    public ExternalChangeMonitor ExternalChanges => _externalChanges;
 
     public bool CaretHookInstalled => _caret.IsInstalled;
 
@@ -131,6 +135,7 @@ internal sealed class AppHost : IDisposable
         services.AddSingleton<DocumentLoader>();
         services.AddSingleton<TextEncoder>();
         services.AddSingleton<IFileSystem, Win32FileSystem>();
+        services.AddSingleton<IFileWatcher, Win32FileWatcher>();
         services.AddSingleton<ITextBufferFactory>(LocalTextBufferFactory.Instance);
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IDateTimeFormatter, Win32DateTimeFormatter>();
@@ -270,6 +275,7 @@ internal sealed class AppHost : IDisposable
 
         editor.TextChanged += ScheduleSnapshot;
         documents.TitleUpdated += ScheduleSnapshot;
+        var externalChanges = new ExternalChangeMonitor(documents, sp.GetRequiredService<IFileWatcher>(), window, () => keys.MenuActive);
         StartupTrace.Mark("Placement, autosave registered");
         documents.UpdateTitle();
         statusBar.UpdateAll();
@@ -284,7 +290,7 @@ internal sealed class AppHost : IDisposable
                 statusBar.UpdateLineColumn(force: false);
             }
         });
-        return new AppHost(sp, window, registry, context, menus, keys, caret, autosave, snapshots);
+        return new AppHost(sp, window, registry, context, menus, keys, caret, autosave, snapshots, externalChanges);
     }
 
     /// <summary>Help and Feedback links from the assembly metadata of the app project.</summary>
@@ -296,6 +302,7 @@ internal sealed class AppHost : IDisposable
 
     public void Dispose()
     {
+        _externalChanges.Dispose();
         _snapshots.Dispose();
         Autosave.Dispose();
         _caret.Dispose();

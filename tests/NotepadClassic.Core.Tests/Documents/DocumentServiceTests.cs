@@ -72,6 +72,431 @@ public sealed class DocumentServiceTests
         h.Window.Title.Should().Be("Note.txt - Notepad Classic");
     }
 
+    // ---- A file changed by another program ----
+
+    private static Harness EditedThenChangedOutside()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "old");
+        h.Editor.Type("mine");
+        h.Files.Files[FilePath] = Encoding.UTF8.GetBytes("theirs");
+        return h;
+    }
+
+    private static string ChangedQuestion => $"{FilePath} was changed by another program. Do you want to overwrite it with your version?";
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Save_asks_before_overwriting_a_changed_file_and_overwrite_writes_it()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Overwrite);
+        var dialogFlag = false;
+        h.Dialogs.DuringFileChanged = () => dialogFlag = h.State.IsSaveDialogOpen;
+
+        h.Documents.Save();
+
+        h.Dialogs.FileChangedQuestions.Should().Equal(ChangedQuestion);
+        dialogFlag.Should().BeTrue("WM_QUERYENDSESSION refuses shutdown while the question is up");
+        h.State.IsSaveDialogOpen.Should().BeFalse();
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("mine");
+        h.Editor.Modified.Should().BeFalse();
+        h.Window.Title.Should().Be("Note.txt - Notepad Classic");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Cancel_leaves_the_other_programs_version_and_the_edits()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Cancel);
+
+        h.Documents.Save();
+
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("theirs");
+        h.Files.Saves.Should().BeEmpty();
+        h.Dialogs.SaveAsRequests.Should().BeEmpty();
+        h.Editor.Modified.Should().BeTrue();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Save_as_keeps_the_other_programs_version_and_follows_the_new_file()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.SaveAs);
+        h.Dialogs.SaveAsAnswers.Enqueue(Chosen(@"C:\docs\Mine.txt"));
+
+        h.Documents.Save();
+
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("theirs");
+        h.Files.TextOf(@"C:\docs\Mine.txt", Encoding.UTF8).Should().Be("mine");
+        h.State.Path.Should().Be(@"C:\docs\Mine.txt");
+
+        h.Editor.Type("more");
+        h.Documents.Save();
+        h.Dialogs.FileChangedQuestions.Should().ContainSingle("the new file has not changed");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Each_save_asks_again_until_the_change_is_overwritten_and_then_stops()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Cancel);
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Overwrite);
+
+        h.Documents.Save();
+        h.Documents.Save();
+        h.Dialogs.FileChangedQuestions.Should().HaveCount(2);
+
+        h.Editor.Type("mine again");
+        h.Documents.Save();
+
+        h.Dialogs.FileChangedQuestions.Should().HaveCount(2, "this document wrote the last version");
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("mine again");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_write_that_keeps_the_length_and_content_still_counts()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "same");
+        h.Editor.Type("mine");
+        h.Files.Touches[FilePath] = 1;
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Cancel);
+
+        h.Documents.Save();
+
+        h.Dialogs.FileChangedQuestions.Should().ContainSingle();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Nothing_is_asked_when_there_is_nothing_to_lose()
+    {
+        var unchanged = new Harness();
+        unchanged.OpenSaved(FilePath, "old");
+        unchanged.Editor.Type("new");
+        unchanged.Documents.Save();
+        unchanged.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("new");
+
+        var gone = new Harness();
+        gone.OpenSaved(FilePath, "old");
+        gone.Editor.Type("new");
+        gone.Files.Files.Remove(FilePath);
+        gone.Documents.Save();
+        gone.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("new");
+
+        var unreadableNow = EditedThenChangedOutside();
+        unreadableNow.Files.StampErrors.Add(FilePath);
+        unreadableNow.Documents.Save();
+        unreadableNow.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("mine");
+
+        var unknownBefore = new Harness();
+        unknownBefore.Files.Files[FilePath] = Encoding.UTF8.GetBytes("old");
+        unknownBefore.Files.StampErrors.Add(FilePath);
+        unknownBefore.Documents.Load(FilePath, TextEncodingKind.Detect);
+        unknownBefore.Files.StampErrors.Clear();
+        unknownBefore.Editor.Type("new");
+        unknownBefore.Files.Files[FilePath] = Encoding.UTF8.GetBytes("theirs");
+        unknownBefore.Documents.Save();
+        unknownBefore.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("new");
+
+        foreach (var h in new[] { unchanged, gone, unreadableNow, unknownBefore })
+        {
+            h.Dialogs.FileChangedQuestions.Should().BeEmpty();
+        }
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_new_document_forgets_the_file_it_replaced()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.SaveChangesAnswers.Enqueue(SaveChangesChoice.DontSave);
+
+        h.Documents.New();
+
+        h.State.KnownFileStamp.Should().BeNull();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Reopening_a_changed_file_takes_the_new_version_without_asking()
+    {
+        var h = EditedThenChangedOutside();
+        h.Editor.Modified = false;
+        h.Documents.Load(FilePath, TextEncodingKind.Detect);
+        h.Editor.Type("edited");
+
+        h.Documents.Save();
+
+        h.Dialogs.FileChangedQuestions.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Save_as_over_the_same_file_does_not_ask_a_second_time()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.SaveAsAnswers.Enqueue(Chosen(FilePath));
+
+        h.Documents.SaveAs();
+
+        h.Dialogs.FileChangedQuestions.Should().BeEmpty("the Save As dialog asks before replacing a file");
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("mine");
+    }
+
+    [Theory]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    [InlineData(FileChangedChoice.Overwrite, true, "mine")]
+    [InlineData(FileChangedChoice.Cancel, false, "theirs")]
+    public void The_save_changes_question_asks_too(FileChangedChoice choice, bool proceeds, string onDisk)
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.SaveChangesAnswers.Enqueue(SaveChangesChoice.Save);
+        h.Dialogs.FileChangedAnswers.Enqueue(choice);
+
+        h.Documents.CheckSave().Should().Be(proceeds);
+
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be(onDisk);
+        h.Dialogs.SaveAsRequests.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void The_save_changes_question_goes_to_its_save_as_loop_on_save_as()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.SaveChangesAnswers.Enqueue(SaveChangesChoice.Save);
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.SaveAs);
+        h.Dialogs.SaveAsAnswers.Enqueue(Chosen(@"C:\docs\Mine.txt"));
+
+        h.Documents.CheckSave().Should().BeTrue();
+
+        h.Dialogs.SaveAsRequests.Single().Suggested.Should().Be(FilePath);
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("theirs");
+        h.Files.TextOf(@"C:\docs\Mine.txt", Encoding.UTF8).Should().Be("mine");
+    }
+
+    // ---- Reports as soon as a file changes ----
+
+    private static Harness OpenThenChangedOutside(string open = "old")
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, open);
+        h.Files.Files[FilePath] = Encoding.UTF8.GetBytes("theirs");
+        return h;
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_change_outside_is_reported_with_reload_as_the_default_for_clean_text()
+    {
+        var h = OpenThenChangedOutside();
+        h.Dialogs.ReloadAnswers.Enqueue(true);
+
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.ReloadQuestions.Should().Equal(($"{FilePath} was changed by another program. Do you want to reload it?", true));
+        h.Editor.Text.Should().Be("theirs");
+        h.Editor.Modified.Should().BeFalse();
+        h.Dialogs.ReloadQuestions.Should().ContainSingle();
+
+        h.Documents.NotifyIfChangedOutside();
+        h.Dialogs.ReloadQuestions.Should().ContainSingle("nothing changed since");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Unsaved_changes_make_keep_the_default_and_keep_them()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.ReloadAnswers.Enqueue(false);
+
+        h.Documents.NotifyIfChangedOutside();
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.ReloadQuestions.Should().Equal(
+            ($"{FilePath} was changed by another program. Do you want to reload it and lose your unsaved changes?", false));
+        h.Editor.Text.Should().Be("mine");
+        h.Documents.IsDirty.Should().BeTrue();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Keep_does_not_silence_the_question_of_save()
+    {
+        var h = EditedThenChangedOutside();
+        h.Dialogs.ReloadAnswers.Enqueue(false);
+        h.Dialogs.FileChangedAnswers.Enqueue(FileChangedChoice.Cancel);
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Documents.Save();
+
+        h.Dialogs.FileChangedQuestions.Should().ContainSingle();
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("theirs");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_change_during_the_report_is_not_reported_again_but_a_later_one_is()
+    {
+        var h = OpenThenChangedOutside();
+        h.Dialogs.ReloadAnswers.Enqueue(false);
+        h.Dialogs.ReloadAnswers.Enqueue(false);
+        h.Dialogs.DuringReloadQuestion = () =>
+        {
+            h.Dialogs.DuringReloadQuestion = null;
+            h.Files.Files[FilePath] = Encoding.UTF8.GetBytes("theirs again");
+            h.Documents.NotifyIfChangedOutside();
+        };
+
+        h.Documents.NotifyIfChangedOutside();
+        h.Dialogs.ReloadQuestions.Should().ContainSingle("the report on screen covers it");
+
+        h.Documents.NotifyIfChangedOutside();
+        h.Dialogs.ReloadQuestions.Should().ContainSingle("the answer covered it as well");
+
+        h.Files.Files[FilePath] = Encoding.UTF8.GetBytes("a third version");
+        h.Documents.NotifyIfChangedOutside();
+        h.Dialogs.ReloadQuestions.Should().HaveCount(2);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Reload_after_a_change_during_the_report_reads_the_newest_version()
+    {
+        var h = OpenThenChangedOutside();
+        h.Dialogs.ReloadAnswers.Enqueue(true);
+        h.Dialogs.DuringReloadQuestion = () => h.Files.Files[FilePath] = Encoding.UTF8.GetBytes("newest");
+
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Editor.Text.Should().Be("newest");
+        h.Documents.NotifyIfChangedOutside();
+        h.Dialogs.ReloadQuestions.Should().ContainSingle();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Reload_keeps_the_caret_and_reports_a_file_that_cannot_be_read()
+    {
+        var kept = OpenThenChangedOutside("old text");
+        kept.Editor.SetSelection(2, 2);
+        kept.Dialogs.ReloadAnswers.Enqueue(true);
+        kept.Documents.NotifyIfChangedOutside();
+        kept.Editor.Selection.Should().Be(new TextRange(2, 2));
+
+        var locked = EditedThenChangedOutside();
+        locked.Files.ReadErrors[FilePath] = FileErrors.AccessDenied;
+        locked.Dialogs.ReloadAnswers.Enqueue(true);
+        locked.Documents.NotifyIfChangedOutside();
+        locked.Dialogs.Messages.Should().ContainSingle();
+        locked.Editor.Text.Should().Be("mine", "a reload that fails keeps the text");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_deleted_file_is_reported_once_and_save_creates_it_again()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "old");
+        h.Editor.Type("mine");
+        h.Files.Files.Remove(FilePath);
+
+        h.Documents.NotifyIfChangedOutside();
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.Messages.Should().ContainSingle().Which.Text.Should().StartWith($"{FilePath} was deleted or moved");
+        h.Dialogs.ReloadQuestions.Should().BeEmpty();
+        h.Editor.Text.Should().Be("mine");
+
+        h.Documents.Save();
+        h.Files.TextOf(FilePath, Encoding.UTF8).Should().Be("mine");
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_file_that_comes_back_unchanged_is_not_reported()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "old");
+        var bytes = h.Files.Files[FilePath];
+        h.Files.Files.Remove(FilePath);
+        h.Documents.NotifyIfChangedOutside();
+        h.Dialogs.Messages.Should().ContainSingle();
+
+        h.Files.Files[FilePath] = bytes;
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.ReloadQuestions.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void An_unreadable_file_is_not_reported_as_gone()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "old");
+        h.Files.StampErrors.Add(FilePath);
+
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.Messages.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Nothing_is_reported_for_untitled_text_or_an_unknown_file()
+    {
+        var untitled = new Harness();
+        untitled.Editor.Type("draft");
+        untitled.Documents.NotifyIfChangedOutside();
+        untitled.Dialogs.ReloadQuestions.Should().BeEmpty();
+
+        var unknown = new Harness();
+        unknown.Files.Files[FilePath] = Encoding.UTF8.GetBytes("old");
+        unknown.Files.StampErrors.Add(FilePath);
+        unknown.Documents.Load(FilePath, TextEncodingKind.Detect);
+        unknown.Files.StampErrors.Clear();
+        unknown.Documents.NotifyIfChangedOutside();
+        unknown.Dialogs.ReloadQuestions.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void Own_saves_are_never_reported()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "old");
+        h.Editor.Type("mine");
+
+        h.Documents.Save();
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.ReloadQuestions.Should().BeEmpty();
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#file-doi-ben-ngoai")]
+    public void A_failed_save_of_the_document_is_not_taken_for_a_change_outside()
+    {
+        var h = new Harness();
+        h.OpenSaved(FilePath, "old text");
+        h.Editor.Type("mine");
+        h.Files.FailingWrite = (1, FileErrors.DiskFull);
+
+        h.Documents.SaveFile(FilePath, isSaveAs: false, TextEncodingKind.Utf8Bom).Succeeded.Should().BeFalse();
+        h.Files.FailingWrite = null;
+        h.Documents.NotifyIfChangedOutside();
+
+        h.Dialogs.ReloadQuestions.Should().BeEmpty();
+        h.Dialogs.FileChangedQuestions.Should().BeEmpty();
+    }
+
     // ---- CheckSave ----
 
     [Fact]
