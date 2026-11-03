@@ -279,7 +279,7 @@ public sealed class FormatModule : IFeatureModule
     }
 }
 
-/// <summary>View menu: zoom, transparency and status bar.</summary>
+/// <summary>View menu: zoom, transparency, always on top and status bar.</summary>
 public sealed class ViewModule : IFeatureModule
 {
     public const string Menu = "View";
@@ -309,6 +309,7 @@ public sealed class ViewModule : IFeatureModule
             c => SetOpacity(c, OpacityPolicy.StepBy(c.Settings.OpacityPercent, OpacityPolicy.Step)),
             IsTransparent);
         registry.Command(CommandId.Opaque, c => SetOpacity(c, OpacityPolicy.Maximum), IsTransparent);
+        registry.Command(CommandId.AlwaysOnTop, ToggleAlwaysOnTop);
 
         registry.Item(ZoomMenu, 0, 0, CommandId.ZoomIn, "Menu_View_ZoomIn", true);
         registry.Item(ZoomMenu, 0, 1, CommandId.ZoomOut, "Menu_View_ZoomOut", true);
@@ -316,7 +317,8 @@ public sealed class ViewModule : IFeatureModule
         registry.Item(TransparencyMenu, 0, 0, CommandId.MoreTransparent, "Menu_View_MoreTransparent", true);
         registry.Item(TransparencyMenu, 0, 1, CommandId.LessTransparent, "Menu_View_LessTransparent", true);
         registry.Item(TransparencyMenu, 0, 2, CommandId.Opaque, "Menu_View_Opaque");
-        registry.Item(Menu, 0, 2, CommandId.StatusBar, "Menu_View_StatusBar", isChecked: c => c.Settings.StatusBar);
+        registry.Item(Menu, 0, 2, CommandId.AlwaysOnTop, "Menu_View_AlwaysOnTop", isChecked: c => c.Settings.AlwaysOnTop);
+        registry.Item(Menu, 0, 3, CommandId.StatusBar, "Menu_View_StatusBar", isChecked: c => c.Settings.StatusBar);
 
         registry.Key(KeyTier.Global, VirtualKeys.OemPlus, Contribution.Ctrl, CommandId.ZoomIn);
         registry.Key(KeyTier.Global, VirtualKeys.Add, Contribution.Ctrl, CommandId.ZoomIn);
@@ -339,6 +341,13 @@ public sealed class ViewModule : IFeatureModule
         c.Settings.OpacityPercent = percent;
         c.Settings.ViewChanged = true;
         c.Window.SetOpacity(percent);
+    }
+
+    private static void ToggleAlwaysOnTop(CommandContext c)
+    {
+        c.Settings.AlwaysOnTop = !c.Settings.AlwaysOnTop;
+        c.Settings.ViewChanged = true;
+        c.Window.SetAlwaysOnTop(c.Settings.AlwaysOnTop);
     }
 
     private static void ToggleStatusBar(CommandContext c)

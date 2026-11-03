@@ -109,6 +109,10 @@ internal sealed class FakeWindow : IMainWindow
 
     public void SetOpacity(int percent) => OpacityPercent = percent;
 
+    public bool? AlwaysOnTop { get; private set; }
+
+    public void SetAlwaysOnTop(bool onTop) => AlwaysOnTop = onTop;
+
     public int WaitCursors { get; private set; }
 
     public int WaitCursorsShowing { get; private set; }

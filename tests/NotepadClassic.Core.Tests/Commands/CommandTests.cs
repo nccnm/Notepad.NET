@@ -77,6 +77,7 @@ public sealed class CommandTests
         registry.MenusUnder("").Select(m => m.Path).Should().Equal("File", "Edit", "Format", "View", "Help");
         registry.MenusUnder("View").Select(m => m.Path).Should().Equal("View/Zoom", "View/Transparency");
         registry.ItemsOf("View/Transparency").Select(i => i.Command).Should().Equal(CommandId.MoreTransparent, CommandId.LessTransparent, CommandId.Opaque);
+        registry.ItemsOf("View").Select(i => i.Command).Should().Equal(CommandId.AlwaysOnTop, CommandId.StatusBar);
         registry.ItemsOf("File").Select(i => i.Command).Should().Equal(
             CommandId.New, CommandId.NewWindow, CommandId.Open, CommandId.Save, CommandId.SaveAs,
             CommandId.PageSetup, CommandId.Print, CommandId.Exit);
@@ -398,6 +399,29 @@ public sealed class CommandTests
         h.Settings.OpacityPercent = 50;
         h.Run(CommandId.Opaque);
         h.Window.OpacityPercent.Should().Be(OpacityPolicy.Maximum);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#luon-o-tren")]
+    public void Always_on_top_toggles_marks_settings_changed_and_shows_a_check_mark()
+    {
+        var h = new Harness();
+        var item = h.Registry.ItemsOf("View").Single(i => i.Command == CommandId.AlwaysOnTop);
+
+        h.Settings.AlwaysOnTop.Should().BeFalse("the default behaves like the original");
+        h.Settings.ViewChanged.Should().BeFalse();
+        item.IsChecked!(h.Context).Should().BeFalse();
+
+        h.Run(CommandId.AlwaysOnTop);
+        h.Settings.AlwaysOnTop.Should().BeTrue();
+        h.Window.AlwaysOnTop.Should().BeTrue();
+        h.Settings.ViewChanged.Should().BeTrue();
+        item.IsChecked!(h.Context).Should().BeTrue();
+
+        h.Run(CommandId.AlwaysOnTop);
+        h.Settings.AlwaysOnTop.Should().BeFalse();
+        h.Window.AlwaysOnTop.Should().BeFalse();
+        item.IsChecked!(h.Context).Should().BeFalse();
     }
 
     [Fact]

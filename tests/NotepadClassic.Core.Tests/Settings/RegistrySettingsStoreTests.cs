@@ -323,6 +323,38 @@ public sealed class RegistrySettingsStoreTests
         store.Load().OpacityPercent.Should().Be(70);
     }
 
+    [Theory]
+    [Trait("Doc", "parity.md#registry")]
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    [InlineData(7, true)]
+    public void Always_on_top_is_read_as_a_flag(int stored, bool expected)
+    {
+        Store().Load();
+        _registry.User![SettingsSchema.AlwaysOnTop] = new MemorySettingsRegistry.Value(MemorySettingsRegistry.Dword, stored);
+
+        Store().Load().AlwaysOnTop.Should().Be(expected);
+    }
+
+    [Fact]
+    [Trait("Doc", "parity.md#registry")]
+    public void Always_on_top_defaults_to_off_is_saved_with_the_view_group_and_is_not_imported()
+    {
+        _registry.SetDword(Legacy, SettingsSchema.AlwaysOnTop, 1);
+        _registry.SetDword(Legacy, SettingsSchema.Wrap, 1);
+        var store = Store();
+        var s = store.Load();
+        s.AlwaysOnTop.Should().BeFalse("the original has no such value to import");
+        _registry.User.Should().NotContainKey(SettingsSchema.AlwaysOnTop);
+
+        s.AlwaysOnTop = true;
+        s.ViewChanged = true;
+        store.Save(s, null);
+
+        _registry.User![SettingsSchema.AlwaysOnTop].Should().Be(new MemorySettingsRegistry.Value(MemorySettingsRegistry.Dword, 1));
+        store.Load().AlwaysOnTop.Should().BeTrue();
+    }
+
     [Fact]
     [Trait("Doc", "parity.md#registry")]
     public void Never_written_values_stay_untouched_even_when_every_group_changes()

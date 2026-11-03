@@ -518,6 +518,20 @@ Bản gốc không có tính năng này; mọi dòng đều là **cố ý khác*
 | `Ctrl+Shift+cuộn chuột` trên cửa sổ chính: lên đục hơn, xuống trong hơn | `KeyDispatcher.PreFilterMessage` | `Ctrl_shift_wheel_changes_opacity_and_is_kept_from_the_edit_control`, `Other_wheel_chords_stay_with_the_edit_control`, `The_wheel_chord_ignores_other_windows_and_an_open_menu`, `A_high_resolution_wheel_steps_once_per_notch_and_a_turn_back_starts_over` | cố ý khác | Trên bản gốc tổ hợp này tới `EDIT`; port giữ nó lại nên `Ctrl+cuộn` thường vẫn zoom như cũ, còn thêm Shift thì không zoom |
 | Lưu ở giá trị `iOpacityPercent` (`REG_DWORD`) cùng nhóm Word Wrap + Status Bar; thiếu hoặc sai kiểu thì 100, ngoài khoảng thì kẹp | `RegistrySettingsStore` | `Opacity_is_read_within_its_limits`, `Opacity_defaults_to_opaque_is_saved_with_the_view_group_and_is_not_imported` | cố ý khác | Không import từ khóa của gốc |
 
+<a id="luon-o-tren"></a>
+
+## Luôn ở trên (tính năng thêm của port)
+
+Bản gốc không có tính năng này; mọi dòng đều là **cố ý khác**. Mặc định tắt, khi đó hành vi giống bản gốc, trừ mục menu mới.
+
+| Hành vi | Nơi cài đặt | Test | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| Menu `View > Always on Top`, có dấu check, nằm giữa `Transparency` và `Status Bar` | `ViewModule`, `Resources/Strings.resx` | `Always_on_top_toggles_marks_settings_changed_and_shows_a_check_mark`, `Menu_bar_matches_the_original_resource_layout`, `Always_on_top_from_the_menu_sets_the_style_and_survives_restarts` | cố ý khác | Không thêm phím accelerator, nên hai bảng 20 và 8 phím giữ nguyên |
+| Cửa sổ giữ `WS_EX_TOPMOST` và nằm trên cửa sổ không topmost của app khác, kể cả khi app đó đang active | `MainForm.SetAlwaysOnTop` (`Form.TopMost`) | `A_new_window_is_not_topmost_and_the_command_toggles_the_style`, `The_saved_choice_applies_when_the_window_is_created`, `Word_wrap_replacing_the_edit_control_keeps_the_window_topmost`, `Only_an_always_on_top_window_stays_above_another_active_app` | cố ý khác | Cửa sổ khác cũng topmost thì Windows xếp theo thứ tự kích hoạt |
+| Hộp thoại (Find, Replace, Go To, Font, Open, Save As) mở trên cửa sổ; hộp Find đang mở đi theo khi bật hoặc tắt và vẫn ở trên | Windows, vì `hwndOwner` là cửa sổ chính | `Dialogs_open_above_an_always_on_top_window`, `An_open_find_dialog_follows_the_toggle_and_stays_above` | cố ý khác | Không cần code riêng: cửa sổ được sở hữu có `WS_EX_TOPMOST` theo cửa sổ chủ |
+| Dùng cùng trong suốt: đổi độ mờ không làm mất topmost, bật tắt topmost không đổi alpha, hộp thoại vẫn đục | `MainForm` | `Changing_the_opacity_keeps_the_window_topmost_and_the_other_way_round`, `Always_on_top_and_transparency_work_together_and_both_survive_a_restart` | cố ý khác | |
+| Lưu ở giá trị `fAlwaysOnTop` (`REG_DWORD`) cùng nhóm Word Wrap + Status Bar; thiếu hoặc sai kiểu thì 0, khác 0 là bật | `RegistrySettingsStore` | `Always_on_top_is_read_as_a_flag`, `Always_on_top_defaults_to_off_is_saved_with_the_view_group_and_is_not_imported` | cố ý khác | Không import từ khóa của gốc |
+
 <a id="chua-lam"></a>
 
 ## Các phần chưa làm

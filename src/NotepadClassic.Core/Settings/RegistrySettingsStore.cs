@@ -72,6 +72,9 @@ public static class SettingsSchema
 
     /// <summary>Port addition: not a value of the original, so it is never imported.</summary>
     public const string OpacityPercent = "iOpacityPercent";
+
+    /// <summary>Port addition: not a value of the original, so it is never imported.</summary>
+    public const string AlwaysOnTop = "fAlwaysOnTop";
     public const string DefaultEncoding = "iDefaultEncoding";
     public const string SaveWindowPositions = "fSaveWindowPositions";
     public const string WindowsOnlyEol = "fWindowsOnlyEOL";
@@ -168,6 +171,7 @@ public sealed class RegistrySettingsStore(ISettingsRegistry registry, SettingsDe
             DefaultEncoding = (TextEncodingKind)Dword(SettingsSchema.DefaultEncoding, (int)TextEncodingKind.Utf8),
             StatusBar = Dword(SettingsSchema.StatusBar, 1) != 0,
             OpacityPercent = OpacityPolicy.Clamp(Dword(SettingsSchema.OpacityPercent, OpacityPolicy.Maximum)),
+            AlwaysOnTop = Dword(SettingsSchema.AlwaysOnTop, 0) != 0,
             SearchString = Text(SettingsSchema.SearchString, SettingsSchema.SearchCapacity, ""),
             ReplaceString = Text(SettingsSchema.ReplaceString, SettingsSchema.SearchCapacity, ""),
             Header = Text(SettingsSchema.Header, SettingsSchema.HeaderCapacity, _defaults.Header),
@@ -357,6 +361,7 @@ public sealed class RegistrySettingsStore(ISettingsRegistry registry, SettingsDe
             key.WriteDword(SettingsSchema.Wrap, settings.WordWrap ? 1 : 0);
             key.WriteDword(SettingsSchema.StatusBar, settings.StatusBar ? 1 : 0);
             key.WriteDword(SettingsSchema.OpacityPercent, settings.OpacityPercent);
+            key.WriteDword(SettingsSchema.AlwaysOnTop, settings.AlwaysOnTop ? 1 : 0);
         }
 
         if (settings.PageSetupChanged)

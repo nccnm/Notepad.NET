@@ -428,6 +428,10 @@
     <value>&amp;Opaque</value>
     <comment>menu, port addition</comment>
   </data>
+  <data name="Menu_View_AlwaysOnTop" xml:space="preserve">
+    <value>&amp;Always on Top</value>
+    <comment>menu, port addition</comment>
+  </data>
   <data name="Menu_View_StatusBar" xml:space="preserve">
     <value>&amp;Status Bar</value>
     <comment>menu</comment>

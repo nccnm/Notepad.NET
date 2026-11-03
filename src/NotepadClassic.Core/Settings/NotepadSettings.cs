@@ -25,6 +25,9 @@ public sealed class NotepadSettings
     /// <summary><c>iOpacityPercent</c>, default 100 (port addition, the original has no such value).</summary>
     public int OpacityPercent { get; set; } = OpacityPolicy.Maximum;
 
+    /// <summary><c>fAlwaysOnTop</c>, default 0 (port addition, the original has no such value).</summary>
+    public bool AlwaysOnTop { get; set; }
+
     /// <summary><c>iDefaultEncoding</c>, default 5 (UTF-8). Never written by the original.</summary>
     public TextEncodingKind DefaultEncoding { get; set; } = TextEncodingKind.Utf8;
 

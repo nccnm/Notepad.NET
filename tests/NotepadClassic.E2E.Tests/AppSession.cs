@@ -126,6 +126,26 @@ internal sealed partial class AppSession : IDisposable
     /// <summary>Alpha of the main window (<c>LWA_ALPHA</c>); null when it is not layered.</summary>
     public byte? WindowAlpha => Native.GetAlpha(Window.Properties.NativeWindowHandle.Value);
 
+    public static nint Handle(Window window) => window.Properties.NativeWindowHandle.Value;
+
+    /// <summary><c>WS_EX_TOPMOST</c> of a top-level window.</summary>
+    public static bool IsTopmost(Window window) => Native.IsTopmost(Handle(window));
+
+    /// <summary>Whether <paramref name="upper"/> comes before <paramref name="lower"/> in the real z-order.</summary>
+    public static bool IsAbove(Window upper, Window lower) => Native.IsAbove(Handle(upper), Handle(lower));
+
+    /// <summary>Posts <c>WM_CLOSE</c>, which a dialog takes as Cancel; no keyboard focus involved.</summary>
+    public static void Close(Window window) => Native.Close(Handle(window));
+
+    /// <summary>The owner window (<c>GW_OWNER</c>).</summary>
+    public static nint OwnerOf(Window window) => Native.OwnerOf(Handle(window));
+
+    /// <summary><c>IsWindow</c>, on the handle read while the window was open.</summary>
+    public static bool Exists(Window window) => Native.Exists(Handle(window));
+
+    /// <summary>Alpha of a window (<c>LWA_ALPHA</c>); null when it is not layered.</summary>
+    public static byte? AlphaOf(Window window) => Native.GetAlpha(Handle(window));
+
     /// <summary>Puts the cursor in the middle of the main window, read and set in this process's
     /// own DPI context, since a wheel message goes to the window under the cursor.</summary>
     public void MoveCursorIntoWindow() => Native.MoveCursorInto(Window.Properties.NativeWindowHandle.Value);
@@ -263,6 +283,44 @@ internal sealed partial class AppSession : IDisposable
 
         public static byte? GetAlpha(nint hwnd) =>
             GetLayeredWindowAttributes(hwnd, out _, out var alpha, out var flags) && (flags & 0x2) != 0 ? alpha : null;
+
+        private const int GWL_EXSTYLE = -20;
+        private const long WS_EX_TOPMOST = 0x8;
+        private const uint GW_OWNER = 4;
+        private const uint GW_HWNDPREV = 3;
+
+        [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+        private static partial nint GetWindowLongPtr(nint hwnd, int index);
+
+        [LibraryImport("user32.dll")]
+        private static partial nint GetWindow(nint hwnd, uint command);
+
+        [LibraryImport("user32.dll", EntryPoint = "IsWindow")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool Exists(nint hwnd);
+
+        public static bool IsTopmost(nint hwnd) => ((long)GetWindowLongPtr(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
+
+        public static nint OwnerOf(nint hwnd) => GetWindow(hwnd, GW_OWNER);
+
+        [LibraryImport("user32.dll", EntryPoint = "PostMessageW")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool PostMessage(nint hwnd, uint msg, nint wParam, nint lParam);
+
+        public static void Close(nint hwnd) => PostMessage(hwnd, 0x0010, 0, 0);
+
+        public static bool IsAbove(nint upper, nint lower)
+        {
+            for (var window = GetWindow(lower, GW_HWNDPREV); window != 0; window = GetWindow(window, GW_HWNDPREV))
+            {
+                if (window == upper)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT
@@ -486,6 +544,10 @@ internal static class Ui
 
     public static AutomationElement Descendant(AutomationElement parent, string automationId) =>
         Wait.For(() => parent.FindFirstDescendant(c => c.ByAutomationId(automationId)), $"control {automationId}");
+
+    /// <summary>The check mark of a menu item as UIA reports it; a ToolStripMenuItem has no toggle pattern when unchecked.</summary>
+    public static bool IsChecked(AutomationElement item) =>
+        (item.Patterns.LegacyIAccessible.Pattern.State.Value & AccessibilityState.STATE_SYSTEM_CHECKED) != 0;
 
     public static MenuItem MenuItem(AutomationElement parent, string name) =>
         Wait.For(() => parent.FindFirstDescendant(c => c.ByName(name).And(c.ByControlType(ControlType.MenuItem)))?.AsMenuItem(), $"menu {name}");

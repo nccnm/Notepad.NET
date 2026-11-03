@@ -36,6 +36,9 @@ public enum CommandId
     MoreTransparent = 0x50,
     LessTransparent = 0x51,
     Opaque = 0x52,
+
+    /// <summary>Port addition (View > Always on Top); not in the original.</summary>
+    AlwaysOnTop = 0x53,
     Cut = 0x300,
     Copy = 0x301,
     Paste = 0x302,

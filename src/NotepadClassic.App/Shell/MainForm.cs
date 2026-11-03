@@ -45,6 +45,7 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
         }
         Text = strings.GetString(StringKeys.AppName);
         SetOpacity(settings.OpacityPercent);
+        SetAlwaysOnTop(settings.AlwaysOnTop);
 
         _status = new StatusStrip
         {
@@ -216,6 +217,10 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
     /// window has no layered style at 100%. The alpha covers the native Edit child as well; menu
     /// drop-downs and dialogs are top-level windows of their own and stay opaque.</summary>
     public void SetOpacity(int percent) => Opacity = percent / 100.0;
+
+    /// <summary><c>WS_EX_TOPMOST</c> through <see cref="Form.TopMost"/>. Windows moves owned windows
+    /// (dialogs) with their owner, so they stay above it.</summary>
+    public void SetAlwaysOnTop(bool onTop) => TopMost = onTop;
 
     public void SetPartText(int part, string text) => _parts[part].Text = text;
 

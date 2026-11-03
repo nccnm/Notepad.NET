@@ -42,6 +42,9 @@ public interface IMainWindow
     /// <summary>Opacity of the whole window, in percent (View > Transparency).</summary>
     void SetOpacity(int percent);
 
+    /// <summary>Keeps the window above windows that are not topmost (View > Always on Top).</summary>
+    void SetAlwaysOnTop(bool onTop);
+
     /// <summary>Shows the wait cursor until disposed (<c>SetCursor(IDC_WAIT)</c>).</summary>
     IDisposable ShowWaitCursor();
 }
