@@ -52,6 +52,19 @@ public sealed class AlwaysOnTopShellTests
 
     [Fact]
     [Trait("Doc", "parity.md#luon-o-tren")]
+    public void A_choice_made_before_the_window_shows_applies_when_it_shows() => Sta.Run(() =>
+    {
+        using var app = new TestApp();
+        Run(app, CommandId.AlwaysOnTop);
+        app.Host.Window.TopMost.Should().BeFalse("nothing is asked of a window that is not on screen");
+
+        app.Host.Window.Show();
+
+        IsTopmost(app).Should().BeTrue();
+    });
+
+    [Fact]
+    [Trait("Doc", "parity.md#luon-o-tren")]
     public void Changing_the_opacity_keeps_the_window_topmost_and_the_other_way_round() => Sta.Run(() =>
     {
         using var app = Shown(new TestApp());

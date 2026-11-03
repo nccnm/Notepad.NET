@@ -32,6 +32,10 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
     /// window itself is hidden, so layout uses this instead.</summary>
     private bool _statusBarVisible;
 
+    /// <summary>The choice of View > Always on Top, which <see cref="Form.TopMost"/> follows once
+    /// the window is on screen.</summary>
+    private bool _alwaysOnTop;
+
     public MainForm(NotepadSettings settings, ILocalizedStrings strings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -45,7 +49,7 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
         }
         Text = strings.GetString(StringKeys.AppName);
         SetOpacity(settings.OpacityPercent);
-        SetAlwaysOnTop(settings.AlwaysOnTop);
+        _alwaysOnTop = settings.AlwaysOnTop;
 
         _status = new StatusStrip
         {
@@ -219,8 +223,32 @@ internal sealed class MainForm : Form, IMainWindow, IStatusBarView
     public void SetOpacity(int percent) => Opacity = percent / 100.0;
 
     /// <summary><c>WS_EX_TOPMOST</c> through <see cref="Form.TopMost"/>. Windows moves owned windows
-    /// (dialogs) with their owner, so they stay above it.</summary>
-    public void SetAlwaysOnTop(bool onTop) => TopMost = onTop;
+    /// (dialogs) with their owner, so they stay above it. Asked for only on a window that is on
+    /// screen, see <see cref="SetVisibleCore"/>.</summary>
+    public void SetAlwaysOnTop(bool onTop)
+    {
+        _alwaysOnTop = onTop;
+        if (Visible)
+        {
+            TopMost = onTop;
+        }
+    }
+
+    /// <summary>
+    /// Applies the choice once the window is on screen. Asked for earlier, by a process without the
+    /// foreground and with the global hook of UltraViewer loaded, the style is dropped, and later
+    /// <c>SetWindowPos</c> calls succeed without restoring it (seen 2026-11-03; not seen on a desktop
+    /// the hook does not reach). The base call has shown the window when it returns, unlike
+    /// <c>OnVisibleChanged</c>, which can run inside <c>WM_SHOWWINDOW</c>.
+    /// </summary>
+    protected override void SetVisibleCore(bool value)
+    {
+        base.SetVisibleCore(value);
+        if (value && _alwaysOnTop && !TopMost)
+        {
+            TopMost = true;
+        }
+    }
 
     public void SetPartText(int part, string text) => _parts[part].Text = text;
 
