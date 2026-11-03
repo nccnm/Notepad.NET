@@ -30,11 +30,7 @@ public sealed class AlwaysOnTopTests
         return isChecked;
     }
 
-    private static void CloseAndWait(AppSession app)
-    {
-        app.Press(VirtualKeyShort.ALT, VirtualKeyShort.F4);
-        app.WaitForExit();
-    }
+    private static void CloseAndWait(AppSession app) => app.CloseWithKeyboard();
 
     private static void UntilTopmost(AppSession app, bool expected, string what) =>
         Wait.Until(() => AppSession.IsTopmost(app.Window) == expected, what);

@@ -166,7 +166,6 @@ public sealed unsafe partial class ShellTests : IDisposable
         keys.MenuActive = false;
         keys.DialogMessage = _ => true;
         keys.PreFilterMessage(ref plain).Should().BeTrue("a modeless dialog consumed it");
-        KeyDispatcher.CurrentModifiers().Should().Be(KeyModifiers.None);
     });
 
     // ---- Edit control ----

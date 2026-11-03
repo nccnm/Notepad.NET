@@ -182,6 +182,22 @@ internal sealed partial class AppSession : IDisposable
     }
 
     /// <summary>
+    /// Alt+F4 on a document without unsaved changes, and waits for the exit. Not through
+    /// <see cref="Press"/>: its check of the foreground after the keys would see the closing window
+    /// hand the foreground over, to nothing or to another app, and call that a theft.
+    /// </summary>
+    public void CloseWithKeyboard()
+    {
+        Activate();
+        using (Keyboard.Pressing(VirtualKeyShort.ALT))
+        {
+            Keyboard.Type(VirtualKeyShort.F4);
+        }
+
+        WaitForExit();
+    }
+
+    /// <summary>
     /// Makes the main window the foreground window with the caret in the editor, and locks the
     /// foreground (<c>LockSetForegroundWindow</c>) so that windows other processes show meanwhile
     /// cannot take it: test projects that run in parallel with this one show real dialogs (Go To,

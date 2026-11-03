@@ -131,8 +131,7 @@ public sealed class SmokeTests
             Ui.MenuItem(app.Window, "More Transparent").Invoke();
             Wait.Until(() => app.WindowAlpha == 229, "90% opacity", () => $"{app.WindowAlpha}");
 
-            app.Press(VirtualKeyShort.ALT, VirtualKeyShort.F4);
-            app.WaitForExit();
+            app.CloseWithKeyboard();
         }
 
         try
@@ -174,9 +173,8 @@ public sealed class SmokeTests
         var view = Ui.MenuItem(app.Window, "View");
         view.Expand();
         view.Collapse();
-        app.Press(VirtualKeyShort.ALT, VirtualKeyShort.F4);
 
-        app.WaitForExit();
+        app.CloseWithKeyboard();
     }
 
     [Fact]
