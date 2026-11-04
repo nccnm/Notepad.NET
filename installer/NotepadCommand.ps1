@@ -39,18 +39,22 @@ function Get-Profiles {
 # A profile a shell may not run would print an error at each start of that shell.
 function Test-ShellRunsProfiles($shell) {
     if (-not (Get-Command $shell -ErrorAction SilentlyContinue)) { return $false }
-    # The -ExecutionPolicy of this process is inherited through this variable.
-    $inherited = $env:PSExecutionPolicyPreference
+    # The -ExecutionPolicy of this process is inherited through the first variable. The second is empty so that
+    # each shell finds its own modules: a setup started from PowerShell 7 passes down the paths of that version,
+    # where Windows PowerShell cannot load the module of Get-ExecutionPolicy.
+    $inheritedPolicy = $env:PSExecutionPolicyPreference
+    $inheritedModules = $env:PSModulePath
     $env:PSExecutionPolicyPreference = $null
+    $env:PSModulePath = $null
     try {
-        $policy = (& $shell -NoProfile -NonInteractive -Command 'Get-ExecutionPolicy' | Out-String).Trim()
+        $policy = (& $shell -NoProfile -NonInteractive -Command 'Get-ExecutionPolicy' 2>&1 | Out-String).Trim()
     }
     finally {
-        $env:PSExecutionPolicyPreference = $inherited
+        $env:PSExecutionPolicyPreference = $inheritedPolicy
+        $env:PSModulePath = $inheritedModules
     }
 
-    # Only a policy read for certain: under Restricted the command itself can fail to load its module, and
-    # the text of that error is no policy.
+    # Only a policy read for certain: the text of an error is no policy.
     Log "$shell execution policy: $(($policy -split '\r?\n')[0])"
     $policy -in 'RemoteSigned', 'Unrestricted', 'Bypass'
 }
