@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/bench/">
+    <Project Path="bench/NotepadNet.Benchmarks/NotepadNet.Benchmarks.csproj" />
+    <Project Path="bench/NotepadNet.PerfHarness/NotepadNet.PerfHarness.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/NotepadNet.App/NotepadNet.App.csproj" />
+    <Project Path="src/NotepadNet.Core/NotepadNet.Core.csproj" />
+    <Project Path="src/NotepadNet.Platform/NotepadNet.Platform.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NotepadNet.App.Tests/NotepadNet.App.Tests.csproj" />
+    <Project Path="tests/NotepadNet.Core.Tests/NotepadNet.Core.Tests.csproj" />
+    <Project Path="tests/NotepadNet.E2E.Tests/NotepadNet.E2E.Tests.csproj" />
+    <Project Path="tests/NotepadNet.ParityProbes/NotepadNet.ParityProbes.csproj" />
+    <Project Path="tests/NotepadNet.Platform.Tests/NotepadNet.Platform.Tests.csproj" />
+  </Folder>
+</Solution>

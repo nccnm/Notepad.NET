@@ -13,9 +13,9 @@
     <Deterministic>true</Deterministic>
     <InvariantGlobalization>false</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <Company>Notepad Classic</Company>
-    <Product>Notepad Classic</Product>
-    <Copyright>Notepad Classic contributors</Copyright>
+    <Company>Notepad.NET</Company>
+    <Product>Notepad.NET</Product>
+    <Copyright>Notepad.NET contributors</Copyright>
     <!-- Release builds get the version from the tag (.github/workflows/release.yml). -->
     <Version>0.0.0-dev</Version>
   </PropertyGroup>

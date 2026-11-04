@@ -11,11 +11,11 @@ máy rảnh (không build, không benchmark chạy song song): số đo trong l�
 
 | Công cụ | Đo gì | Lệnh |
 |---|---|---|
-| `bench/NotepadClassic.Benchmarks` | BenchmarkDotNet trong tiến trình, `MemoryDiagnoser`: các đường nóng của Core với dịch vụ Win32 thật (`IsTextUnicode`, `MultiByteToWideChar`, `FindNLSString`, `CreateFileW`), văn bản 50 triệu ký tự sinh lúc chạy | `dotnet run --project bench/NotepadClassic.Benchmarks -c Release -- --filter "*HotPath*"` |
-| `bench/NotepadClassic.PerfHarness launch` | Ngoài tiến trình, cùng phương pháp cho port và gốc: từ `CreateProcess` tới cửa sổ cấp cao đầu tiên hiện (`EVENT_OBJECT_SHOW` qua `SetWinEventHook`) và tới khi `WM_GETTEXTLENGTH` của Edit bằng số ký tự mong đợi. File mẫu 1/50/500 MB (ASCII, UTF-8 có chữ Việt, UTF-16 LE có BOM) sinh lúc chạy trong `%TEMP%\npport-perf` rồi xóa. Lần đầu báo riêng, median và min của các lần sau | `dotnet run --project bench/NotepadClassic.PerfHarness -c Release -- launch --exe <exe> --sizes 1,50 --kinds ascii,utf8,utf16 --runs 5 [--hive <hive settings của port>]` |
-| `bench/NotepadClassic.PerfHarness editload` | Ba cách đưa văn bản vào Edit control trong cùng tiến trình | `... -- editload --sizes 1,50,500 --runs 5` |
-| `bench/NotepadClassic.PerfHarness find` | Ngoài tiến trình, cùng phương pháp cho port và gốc: khởi động exe, `WM_SETTEXT` văn bản sinh như benchmark (50 triệu ký tự, ASCII hoặc có "tiếng Việt " mỗi 400 ký tự) vào Edit, Ctrl+F bằng `SendInput`, điền chuỗi tìm vào hộp Find (`#32770`, control 1152), bỏ Match case và Wrap around, chọn Down, rồi mỗi lần click: `EM_SETSEL(0,0)`, `WM_COMMAND` nút Find Next, đo tới khi hộp "Cannot find" hiện (`EVENT_OBJECT_SHOW`), đóng hộp. `--repeat` là số click trong một tiến trình (click 1 của port gồm chi phí JIT lần đầu) | `... -- find --exe <exe> --chars 50000000 --kinds ascii,mixed --pattern zqxj --runs 5 --repeat 3` |
-| `NOTEPADCLASSIC_STARTUP_TRACE=<file>` | Dòng thời gian khởi động của chính app: mỗi mốc trong `Program`, `AppHost`, `MainForm` ghi ms tính từ lúc tiến trình được tạo, cộng số method JIT đã biên dịch (`JitInfo`), thời gian JIT và số GC; ghi ra file khi message loop rảnh lần đầu. Không đặt biến thì chỉ tốn một lần đọc môi trường | `$env:NOTEPADCLASSIC_STARTUP_TRACE = "trace.txt"; .\NotepadClassic.exe` |
+| `bench/NotepadNet.Benchmarks` | BenchmarkDotNet trong tiến trình, `MemoryDiagnoser`: các đường nóng của Core với dịch vụ Win32 thật (`IsTextUnicode`, `MultiByteToWideChar`, `FindNLSString`, `CreateFileW`), văn bản 50 triệu ký tự sinh lúc chạy | `dotnet run --project bench/NotepadNet.Benchmarks -c Release -- --filter "*HotPath*"` |
+| `bench/NotepadNet.PerfHarness launch` | Ngoài tiến trình, cùng phương pháp cho port và gốc: từ `CreateProcess` tới cửa sổ cấp cao đầu tiên hiện (`EVENT_OBJECT_SHOW` qua `SetWinEventHook`) và tới khi `WM_GETTEXTLENGTH` của Edit bằng số ký tự mong đợi. File mẫu 1/50/500 MB (ASCII, UTF-8 có chữ Việt, UTF-16 LE có BOM) sinh lúc chạy trong `%TEMP%\npport-perf` rồi xóa. Lần đầu báo riêng, median và min của các lần sau | `dotnet run --project bench/NotepadNet.PerfHarness -c Release -- launch --exe <exe> --sizes 1,50 --kinds ascii,utf8,utf16 --runs 5 [--hive <hive settings của port>]` |
+| `bench/NotepadNet.PerfHarness editload` | Ba cách đưa văn bản vào Edit control trong cùng tiến trình | `... -- editload --sizes 1,50,500 --runs 5` |
+| `bench/NotepadNet.PerfHarness find` | Ngoài tiến trình, cùng phương pháp cho port và gốc: khởi động exe, `WM_SETTEXT` văn bản sinh như benchmark (50 triệu ký tự, ASCII hoặc có "tiếng Việt " mỗi 400 ký tự) vào Edit, Ctrl+F bằng `SendInput`, điền chuỗi tìm vào hộp Find (`#32770`, control 1152), bỏ Match case và Wrap around, chọn Down, rồi mỗi lần click: `EM_SETSEL(0,0)`, `WM_COMMAND` nút Find Next, đo tới khi hộp "Cannot find" hiện (`EVENT_OBJECT_SHOW`), đóng hộp. `--repeat` là số click trong một tiến trình (click 1 của port gồm chi phí JIT lần đầu) | `... -- find --exe <exe> --chars 50000000 --kinds ascii,mixed --pattern zqxj --runs 5 --repeat 3` |
+| `NOTEPADNET_STARTUP_TRACE=<file>` | Dòng thời gian khởi động của chính app: mỗi mốc trong `Program`, `AppHost`, `MainForm` ghi ms tính từ lúc tiến trình được tạo, cộng số method JIT đã biên dịch (`JitInfo`), thời gian JIT và số GC; ghi ra file khi message loop rảnh lần đầu. Không đặt biến thì chỉ tốn một lần đọc môi trường | `$env:NOTEPADNET_STARTUP_TRACE = "trace.txt"; .\Notepad.NET.exe` |
 
 Port luôn chạy với hive settings và thư mục autosave tạm (biến môi trường), nên không đụng cài đặt thật. "Lạnh" thật
 (xóa file cache của hệ điều hành) cần quyền admin nên không đo; "lần đầu" trong bảng là lần đầu sau khi file được sinh.
@@ -51,7 +51,7 @@ Ngân sách đề xuất trong kế hoạch tổng, chốt lại sau lần đo n
 Hai app sàn nằm ngoài repo (chỉ để đo, mã vài chục dòng); sàn 2 dùng đúng các control mà quyết định cố định của dự án
 giữ lại (MenuStrip, StatusStrip, Edit control). Khoảng cách port - sàn 2 là 46 ms, là toàn bộ phần port có thể tác động.
 
-Phân rã một lần khởi động ấm của bản ReadyToRun (`NOTEPADCLASSIC_STARTUP_TRACE`, ms từ lúc tạo tiến trình; JIT ở
+Phân rã một lần khởi động ấm của bản ReadyToRun (`NOTEPADNET_STARTUP_TRACE`, ms từ lúc tạo tiến trình; JIT ở
 lúc rảnh đầu tiên: 450 method, 33 ms, 0 GC):
 
 | Mốc | Tới ms | Bước | ms |
@@ -81,7 +81,7 @@ lúc rảnh đầu tiên: 450 method, 33 ms, 0 GC):
 - Composite ReadyToRun self-contained: bớt 22 ms (151 so với 173) vì framework được biên dịch trước trong cùng version
   bubble (hết 450 method JIT lúc khởi động). Giá: bản phát hành 123 MB thay vì vài MB, mang runtime riêng nên phải
   publish lại khi runtime có bản vá. Không chọn làm mặc định; ai cần có thể publish bằng
-  `dotnet publish src/NotepadClassic.App -c Release -r win-x64 --self-contained true -p:PublishReadyToRunComposite=true`
+  `dotnet publish src/NotepadNet.App -c Release -r win-x64 --self-contained true -p:PublishReadyToRunComposite=true`
   (sau đó, xóa `obj/Release/net10.0-windows/win-x64/R2R` trước khi publish framework-dependent lại: SDK dùng lại các
   assembly thành phần của composite và chúng fail-fast trong `coreclr.dll` khi không có ảnh composite, gặp 2026-10-30).
 - `TieredCompilation.QuickJit=false`: cộng 28 ms (201) vì 450 method ngoài ReadyToRun bị biên dịch tối ưu ngay. Được
@@ -214,7 +214,7 @@ bản không ASCII vẫn nhanh hơn gốc.
 
 ## Ngưỡng allocation
 
-`tests/NotepadClassic.Core.Tests/Performance/AllocationTests.cs` đo `GC.GetAllocatedBytesForCurrentThread` cho một
+`tests/NotepadNet.Core.Tests/Performance/AllocationTests.cs` đo `GC.GetAllocatedBytesForCurrentThread` cho một
 lần gọi, lấy số nhỏ nhất của 5 lần sau 3 lần làm nóng, văn bản 1 triệu ký tự có chữ Việt. Lấy số nhỏ nhất vì JIT
 (tiering, on-stack replacement) đôi khi cấp vài KB trên chính luồng gọi một lần duy nhất (đã gặp 8 KB trong khoảng
 1/50 lần chạy cả bộ test); allocation tỉ lệ với văn bản thì lần nào cũng có nên vẫn bị bắt:
@@ -231,7 +231,7 @@ BenchmarkDotNet xác nhận cùng hình dạng với 50 triệu ký tự (80 B, 
 
 ## ReadyToRun, PGO, Native AOT, trimming
 
-- `NotepadClassic.App.csproj` đặt `PublishReadyToRun=true` (áp dụng khi `dotnet publish -r win-x64`) và `TieredPGO=true`
+- `NotepadNet.App.csproj` đặt `PublishReadyToRun=true` (áp dụng khi `dotnet publish -r win-x64`) và `TieredPGO=true`
   (mặc định của .NET 10, ghi rõ). ReadyToRun bớt khoảng 20 ms khởi động. `InvariantGlobalization=false` giữ nguyên.
   Composite ReadyToRun self-contained bớt thêm 22 ms với giá 123 MB (mục "Khởi động"), không làm mặc định.
 - Native AOT, tra cứu 2026-10-30: tài liệu Microsoft "Native AOT deployment" ghi WinForms và WPF không được hỗ trợ trong

@@ -22,27 +22,27 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore NotepadClassic.slnx
+        run: dotnet restore NotepadNet.slnx
 
       - name: Build (warnings are errors)
-        run: dotnet build NotepadClassic.slnx -c Release --no-restore
+        run: dotnet build NotepadNet.slnx -c Release --no-restore
 
       - name: Core tests with coverage gate (90% line and branch)
         run: >
-          dotnet test --project tests/NotepadClassic.Core.Tests -c Release --no-build
+          dotnet test --project tests/NotepadNet.Core.Tests -c Release --no-build
           --results-directory TestResults/core --
-          --coverlet --coverlet-include "[NotepadClassic.Core]*" --coverlet-output-format cobertura
+          --coverlet --coverlet-include "[NotepadNet.Core]*" --coverlet-output-format cobertura
           --coverlet-threshold 90 --coverlet-threshold-type line,branch --coverlet-threshold-stat Total
 
       - name: Platform integration tests
-        run: dotnet test --project tests/NotepadClassic.Platform.Tests -c Release --no-build --results-directory TestResults/platform
+        run: dotnet test --project tests/NotepadNet.Platform.Tests -c Release --no-build --results-directory TestResults/platform
 
       - name: App shell tests
-        run: dotnet test --project tests/NotepadClassic.App.Tests -c Release --no-build --results-directory TestResults/app
+        run: dotnet test --project tests/NotepadNet.App.Tests -c Release --no-build --results-directory TestResults/app
 
       # Hosted Windows runners have an interactive desktop session, which UI automation needs.
       - name: End-to-end tests (FlaUI on the built exe)
-        run: dotnet test --project tests/NotepadClassic.E2E.Tests -c Release --no-build --results-directory TestResults/e2e
+        run: dotnet test --project tests/NotepadNet.E2E.Tests -c Release --no-build --results-directory TestResults/e2e
 
       - name: Upload coverage
         if: always()

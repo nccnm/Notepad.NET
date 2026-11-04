@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The WinForms shell: main window, Edit control host, menus, keys, status bar. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>NotepadNet.App</RootNamespace>
+    <AssemblyName>Notepad.NET</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- Generated from assets/icon.svg by tools/New-AppIcon.ps1. -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <!-- Startup (docs/performance.md): precompiled code when published with a runtime identifier
+         (dotnet publish -r win-x64), dynamic PGO for the steady state. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The window icon needs every size (title bar, taskbar, Alt+Tab), not only the one
+         Icon.ExtractAssociatedIcon returns. -->
+    <EmbeddedResource Include="app.ico" LogicalName="NotepadNet.App.app.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- View Help and Send Feedback links; an empty value hides the menu item. -->
+    <AssemblyMetadata Include="HelpUrl" Value="" />
+    <AssemblyMetadata Include="FeedbackUrl" Value="" />
+    <AssemblyMetadata Include="PageSetupHelpUrl" Value="" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NotepadNet.Core\NotepadNet.Core.csproj" />
+    <ProjectReference Include="..\NotepadNet.Platform\NotepadNet.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="NotepadNet.App.Tests" />
+  </ItemGroup>
+</Project>

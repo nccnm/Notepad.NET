@@ -86,7 +86,7 @@ Mức bằng chứng: hành vi của gốc mới chỉ suy ra chứ chưa thấy
 
 | Hành vi gốc | Nơi cài đặt | Test | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| Thứ tự menu, separator, chữ có `&`, chữ phím tắt như tài nguyên MUI ("Notepad" thành "Notepad Classic" ở chỗ là tên sản phẩm) | `Features/BuiltInModules.cs`, `App/Shell/MenuBuilder.cs`, `Resources/Strings.resx` | `Menus_follow_the_original_order`, `Every_menu_and_shortcut_text_exists_in_the_resources`, `Menu_bar_matches_the_original_resource_layout`, `Menu_items_take_the_geometry_of_a_win32_menu_bar_with_the_same_texts`, `Bar_fonts_come_from_the_non_client_metrics_of_the_window_dpi` | giống | Mỗi mục rộng và cao đúng bằng mục của một menu bar Win32 thật cùng chữ, tạo ẩn ở cùng DPI (`NativeBarMetrics.MenuItems`, `GetMenuItemRect`); chữ ở `(rộng - rộng chữ) / 2`, căn giữa dọc (`MenuBarRenderer`); font `lfMenuFont` của DPI cửa sổ. Kiểu vẽ khác: xem "So sánh hình" |
+| Thứ tự menu, separator, chữ có `&`, chữ phím tắt như tài nguyên MUI ("Notepad" thành "Notepad.NET" ở chỗ là tên sản phẩm) | `Features/BuiltInModules.cs`, `App/Shell/MenuBuilder.cs`, `Resources/Strings.resx` | `Menus_follow_the_original_order`, `Every_menu_and_shortcut_text_exists_in_the_resources`, `Menu_bar_matches_the_original_resource_layout`, `Menu_items_take_the_geometry_of_a_win32_menu_bar_with_the_same_texts`, `Bar_fonts_come_from_the_non_client_metrics_of_the_window_dpi` | giống | Mỗi mục rộng và cao đúng bằng mục của một menu bar Win32 thật cùng chữ, tạo ẩn ở cùng DPI (`NativeBarMetrics.MenuItems`, `GetMenuItemRect`); chữ ở `(rộng - rộng chữ) / 2`, căn giữa dọc (`MenuBarRenderer`); font `lfMenuFont` của DPI cửa sổ. Kiểu vẽ khác: xem "So sánh hình" |
 | Gạch chân phím truy cập trên thanh menu chỉ khi dùng bàn phím (đang giữ Alt, hoặc vào menu bằng Alt/F10), hoặc khi Windows luôn gạch chân | `MenuBarRenderer` | `Menu_bar_underlines_access_keys_only_in_keyboard_mode` | giống | *(quan sát)* Quan sát 2026-10-29: giữ Alt thì cả hai gạch chân, Esc thì ẩn; chuyển sang bằng Alt+Tab thì gốc không gạch chân, còn MenuStrip mặc định gạch chân và giữ (theo trạng thái UI của cửa sổ). Đã sửa, đo lại hai bên như nhau |
 | Hai bảng accelerator: 20 phím Global (dịch trước, cả trong hộp thoại modeless), 8 phím Main (chỉ khi đích thuộc cửa sổ chính) | `App/Shell/KeyDispatcher.cs` | `Key_bindings_match_the_accelerator_resources`, `There_are_exactly_20_global_and_8_main_bindings`, `Main_keys_only_act_on_the_main_window_global_keys_act_anywhere`, `Global_keys_act_in_the_dialog_main_keys_do_not` | giống | Thứ tự như vòng lặp gốc: GlobalAcc -> `IsDialogMessage` của hộp Find/Replace (mọi message, không chỉ phím) -> MainAcc. Không có banner Store nên không có `IsDialogMessage` thứ hai |
 | Trạng thái menu tính lúc mở menu (`UpdateMenuState`): vùng chọn rỗng xám Cut/Copy/Delete/Search with Bing; Paste theo `CF_TEXT`; text rỗng xám Find/Find Next/Find Previous; wrap bật xám Go To; Undo theo `EM_CANUNDO`; Replace/Select All/Time-Date luôn bật | `ICommand.CanExecute`, `MenuBuilder.UpdateState` | `Empty_selection_grays_cut_copy_delete_and_search_with_bing`, `Paste_follows_the_clipboard_undo_follows_can_undo`, `Empty_text_grays_find_commands_word_wrap_grays_go_to`, `Replace_select_all_and_time_date_are_never_grayed`, `Menu_state_follows_the_rules` | giống | |
@@ -120,7 +120,7 @@ Mức bằng chứng: hành vi của gốc mới chỉ suy ra chứ chưa thấy
 | Zoom: `num*100/den` (0 thành 100), bước 10, kẹp 10-500, Restore 100 | `ZoomPolicy`, `ViewModule` | `Zoom_percent`, `Zoom_steps_are_clamped`, `Zoom_commands_step_clamp_and_update_the_status_bar` | cố ý khác (nhỏ) | Mức dưới 10% (chỉ đạt được bằng Ctrl+lăn) được kẹp về 10 khi bấm Zoom In/Out |
 | Status Bar bật/tắt | `ViewModule`, `MainForm.SetStatusBarVisible` | `Status_bar_toggles_visibility` | giống | |
 | View Help, Send Feedback | `HelpModule`, `AppOptions` | `Help_links_are_hidden_and_disabled_without_a_url` | cố ý khác | Dự án chọn (2026-10-29): URL đọc từ `AssemblyMetadata` `HelpUrl`/`FeedbackUrl`; trống thì ẩn mục menu và F1 không làm gì |
-| About: `ShellAboutW` với icon ứng dụng | `Win32DialogService.ShowAbout` | E2E thủ công (2026-10-29) | giống | Tiêu đề "About Notepad Classic"; icon tự vẽ (`assets/icon.svg`), resource 32512 |
+| About: `ShellAboutW` với icon ứng dụng | `Win32DialogService.ShowAbout` | E2E thủ công (2026-10-29) | giống | Tiêu đề "About Notepad.NET"; icon tự vẽ (`assets/icon.svg`), resource 32512 |
 
 <a id="tim-kiem"></a>
 
@@ -148,7 +148,7 @@ Test Core: `Search/FindEngineTests.cs` (18), `Search/SearchServiceTests.cs`, `Ed
 | `FindTextW` trả NULL thì dùng bản sao hộp thoại riêng | `SearchService` | `A_dialog_that_cannot_open_reports_not_enough_memory` | bỏ | Dự án chọn (2026-10-29): port báo chuỗi 7 |
 | `WM_APPCOMMAND` `APPCOMMAND_BROWSER_SEARCH` chạy Find, không qua quy tắc xám (cả khi văn bản rỗng) | `MainForm.WndProc`, `AppHost` | `Browser_search_app_command_opens_find_even_on_empty_text` | giống | Lệnh app khác vào `DefWindowProc`; không chép chỗ rơi vào nhánh `WM_COMMAND` |
 | Go To (dialog 14): modal, mở với `EM_LINEFROMCHAR(selStart) + 1`; OK đọc tối đa 99 ký tự, `FoldStringW(MAP_FOLDDIGITS)`, `_wtol`; hợp lệ khi `n != 0` và `EM_LINEINDEX(n - 1) != -1`; nhảy `EM_FILELINEINDEX(n - 1)` + scroll | `Core/Editing/GoToService.cs`, `Platform/Services/Win32GoToDialog.cs` | `GoToTests`, `Real_dialog_shows_the_initial_line_rejects_letters_and_reports_errors`, `Go_to_jumps_on_the_real_edit_control` | giống | Template DLGTEMPLATEEX dựng trong code (`DialogTemplateBuilder`), bố cục DLU trùng dialog 14 (dự án chọn 2026-10-29); vòng modal native nên phím tắt của app không chạy trong hộp, như gốc. Gốc gập chữ số tại chỗ, port dùng hai buffer (cùng kết quả) |
-| Nhập sai: MessageBox chuỗi 31, tiêu đề chuỗi 30, `MB_OK` không icon, chủ là hộp Go To; ô nhập thành `EM_GETLINECOUNT`; hộp vẫn mở | `Win32GoToDialog` | `Invalid_lines_show_the_error_and_put_the_line_count_in_the_box`, `Real_dialog_shows_the_initial_line_rejects_letters_and_reports_errors` | giống | Tiêu đề "Notepad Classic - Goto Line". Đã chạy trên gốc và port (2026-10-29, văn bản 4 dòng, đặt chữ bằng `WM_SETTEXT` rồi bấm Go To): `-1`, `-2`, `0`, `5`, `99999999999` báo lỗi rồi ô thành `4`; `٢` (Ả Rập-Ấn) nhảy dòng 2; `３` (fullwidth), ` 3`, `3x` nhảy dòng 3. Hai bên như nhau |
+| Nhập sai: MessageBox chuỗi 31, tiêu đề chuỗi 30, `MB_OK` không icon, chủ là hộp Go To; ô nhập thành `EM_GETLINECOUNT`; hộp vẫn mở | `Win32GoToDialog` | `Invalid_lines_show_the_error_and_put_the_line_count_in_the_box`, `Real_dialog_shows_the_initial_line_rejects_letters_and_reports_errors` | giống | Tiêu đề "Notepad.NET - Goto Line". Đã chạy trên gốc và port (2026-10-29, văn bản 4 dòng, đặt chữ bằng `WM_SETTEXT` rồi bấm Go To): `-1`, `-2`, `0`, `5`, `99999999999` báo lỗi rồi ô thành `4`; `٢` (Ả Rập-Ấn) nhảy dòng 2; `３` (fullwidth), ` 3`, `3x` nhảy dòng 3. Hai bên như nhau |
 | Ô Line number có `ES_NUMBER`: gõ chữ và `-` bị từ chối (balloon), chữ số của hệ chữ khác vẫn nhận | template | `Real_dialog_shows_the_initial_line_rejects_letters_and_reports_errors` | giống | Đã quan sát trên cả hai (2026-10-29): gõ `a-5٣x` thành `5٣`, có balloon |
 | Hai hệ dòng: kiểm tra theo dòng hiển thị, nhảy theo dòng vật lý | `GoToService` | `Check_uses_displayed_lines_and_the_jump_physical_ones`, `Go_to_checks_displayed_lines_and_jumps_to_physical_ones_on_the_real_control` | giống | Chỉ lệch khi Word Wrap bật, mà khi đó Go To xám và Ctrl+G không làm gì (đã quan sát trên gốc) |
 | Vị trí hộp Find/Replace/Go To theo gốc vùng client của cửa sổ chủ (template không `DS_CENTER`) | `Platform/Services/DialogPlacement.cs`, hook `FR_ENABLEHOOK` | so hình bên dưới | giống | *(quan sát khi so hình)* MenuStrip nằm trong vùng client (menu Win32 của gốc ở non-client) nên port dời hộp xuống đúng chiều cao menu lúc `WM_INITDIALOG`, trước khi hiện, giữ trong work area. Find/Replace của port vì thế có thêm cờ `FR_ENABLEHOOK` |
@@ -167,7 +167,7 @@ Hiệu năng (đo 2026-10-29, cùng máy, Release, văn bản 48,9 triệu ký t
 
 | Hành vi gốc | Nơi cài đặt | Test | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| Tiêu đề `%1%2 - Notepad`, `*` khi dirty, chỉ ghi lại khi `*` đổi | `DocumentService.UpdateTitle` | `Title_shows_star_when_dirty_and_is_only_rewritten_when_the_star_changes` | giống | Tên sản phẩm "Notepad Classic" |
+| Tiêu đề `%1%2 - Notepad`, `*` khi dirty, chỉ ghi lại khi `*` đổi | `DocumentService.UpdateTitle` | `Title_shows_star_when_dirty_and_is_only_rewritten_when_the_star_changes` | giống | Tên sản phẩm "Notepad.NET" |
 | Untitled rỗng không bao giờ dirty; còn lại theo `EM_GETMODIFY` | `DocumentService.IsDirty` | `Untitled_empty_document_is_never_dirty_even_when_modified`, `Named_empty_document_follows_the_modified_flag` | giống | |
 | Tên file trên tiêu đề: tên đúng hoa thường từ `FindFirstFileW`, `GetFileTitleW` chỉ khi comdlg32 đã nạp | `Win32FileTitleProvider` | `Title_of_a_saved_file_uses_the_file_title_provider`, `Missing_file_title_comes_from_the_path` | cố ý khác | Dự án chọn (2026-10-29): luôn qua `GetFileTitleW` (ẩn đuôi theo cài đặt Explorer) |
 | 5 ô status bar, mép phải 120/120/50/140 từ phải theo DPI, kẹp 0; chuỗi `"  Ln %d, Col %d"`, `" %d%%"`, tên EOL, tên encoding (6 thành GB18030, mã lạ thành ANSI) | `StatusBarPresenter`, `StatusBarLayout`, `MainForm` | `Status_bar_texts`, `End_of_line_names`, `Encoding_names`, `Status_bar_part_edges`, `Status_bar_part_widths`, `Message_part_is_free_text`, `Status_text_origin_is_measured_on_a_real_status_bar_and_the_gripper_shows` | giống | StatusStrip thay `msctls_statusbar32` (`CreateStatusWindowW(0x44800000)`; comctl32 bỏ `WS_BORDER`, cửa sổ thật có style `0x54000000`). Chữ đặt ở vị trí comctl32 vẽ, đo lúc chạy trên một status bar thật ẩn (`NativeBarMetrics.StatusTextOrigin`, `WM_PRINTCLIENT`), font `lfStatusFont` của DPI cửa sổ. Size grip theme (`Status`/`SP_GRIPPER`) như gốc: dù không có `SBARS_SIZEGRIP`, gốc vẫn vẽ vì cửa sổ cha đổi được kích thước. Kiểu vạch chia khác (xem "So sánh hình") |
@@ -179,7 +179,7 @@ Hiệu năng (đo 2026-10-29, cùng máy, Release, văn bản 48,9 triệu ký t
 
 ## Cài đặt, dòng lệnh, vị trí cửa sổ, kéo thả (giai đoạn d)
 
-Test Core: `Settings/RegistrySettingsStoreTests.cs`, `CommandLine/CommandLineTests.cs`, `CommandLine/StartupCoordinatorTests.cs`; Platform: `Settings/SettingsRegistryTests.cs` (hive tạm `RegLoadAppKey`), `Services/CommandLineParityTests.cs`; App: `StartupShellTests.cs`. Không test nào chạm `HKCU\Software\NotepadClassic` hay `HKCU\Software\Microsoft\Notepad` thật: app nhận store qua DI (test dùng bộ nhớ), Platform dùng hive tạm, và exe đọc biến môi trường `NOTEPADCLASSIC_SETTINGS_HIVE` (đường dẫn file hive) để chạy E2E trên hive tạm.
+Test Core: `Settings/RegistrySettingsStoreTests.cs`, `CommandLine/CommandLineTests.cs`, `CommandLine/StartupCoordinatorTests.cs`; Platform: `Settings/SettingsRegistryTests.cs` (hive tạm `RegLoadAppKey`), `Services/CommandLineParityTests.cs`; App: `StartupShellTests.cs`. Không test nào chạm `HKCU\Software\Notepad.NET` hay `HKCU\Software\Microsoft\Notepad` thật: app nhận store qua DI (test dùng bộ nhớ), Platform dùng hive tạm, và exe đọc biến môi trường `NOTEPADNET_SETTINGS_HIVE` (đường dẫn file hive) để chạy E2E trên hive tạm.
 
 <a id="registry"></a>
 
@@ -187,7 +187,7 @@ Test Core: `Settings/RegistrySettingsStoreTests.cs`, `CommandLine/CommandLineTes
 
 | Hành vi gốc | Nơi cài đặt | Test | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| Khóa `HKCU\Software\Microsoft\Notepad`, font mặc định cho cả máy ở `HKLM\Software\Microsoft\Notepad\DefaultFonts` | `Core/Settings/RegistrySettingsStore.cs`, `Platform/Settings/Win32SettingsRegistry.cs` | `Settings_round_trip_through_the_hive` | cố ý khác | Đã chốt: khóa riêng `HKCU\Software\NotepadClassic`, cùng tên giá trị, kiểu, mặc định; font máy ở `HKLM\Software\NotepadClassic\DefaultFonts`. Khóa của gốc chỉ được đọc (import) |
+| Khóa `HKCU\Software\Microsoft\Notepad`, font mặc định cho cả máy ở `HKLM\Software\Microsoft\Notepad\DefaultFonts` | `Core/Settings/RegistrySettingsStore.cs`, `Platform/Settings/Win32SettingsRegistry.cs` | `Settings_round_trip_through_the_hive` | cố ý khác | Đã chốt: khóa riêng `HKCU\Software\Notepad.NET`, cùng tên giá trị, kiểu, mặc định; font máy ở `HKLM\Software\Notepad.NET\DefaultFonts`. Khóa của gốc chỉ được đọc (import) |
 | Mọi giá trị và mặc định của bảng 4.1; DWORD đúng kiểu `REG_DWORD` và vừa 4 byte, chuỗi đúng `REG_SZ` và vừa buffer (32/128/40 WCHAR), sai thì lấy mặc định; trường BYTE của `LOGFONT` cắt còn byte thấp | `RegistrySettingsStore.Load` | `Every_value_is_read_from_the_user_key`, `Wrongly_typed_values_take_the_default`, `Kinds_and_sizes_are_checked_like_RegQueryValueExW`, `A_string_longer_than_the_buffer_is_ignored` | giống | Đọc bằng `RegQueryValueExW` thật vào buffer cùng cỡ |
 | `RegReadString` không thêm NUL khi chuỗi dài đúng `cchMax` | `RegistrySettingsStore.TrimRegistryString` | `Kinds_and_sizes_are_checked_like_RegQueryValueExW`, `Registry_strings_stop_at_nul_and_fit_the_buffer` | giống | *(chưa xác minh)* Câu hỏi mở đã trả lời (quan sát 2026-10-30 trên hive tạm): dữ liệu `REG_SZ` đúng `cchMax` WCHAR không có NUL làm `RegQueryValueExW` trả `ERROR_MORE_DATA`, nên gốc lấy mặc định và buffer không bao giờ thiếu NUL. Port cũng lấy mặc định; thêm cắt `cchMax - 1` làm chốt chặn |
 | Mặc định chuỗi rỗng cho `searchString`, `replaceString`; mất `szHeader`/`szTrailer` mặc định khi registry chưa có | `SettingsDefaults` | `Empty_registry_gives_the_defaults_of_the_table` | cố ý khác | Đã kiểm trên gốc (2026-10-30, `HKCU\Software\Microsoft\Notepad` không có `szHeader`/`szTrailer`): bản in PDF không có header lẫn footer, hộp Page Setup hiện hai ô trống. Port dùng `&f` / `Page &p` (chuỗi 18, 19) theo "Quyết định còn lại" 3 |
@@ -300,7 +300,7 @@ Quyết định của giai đoạn e:
 - Lề: đổi bằng độ phân giải của máy in thay cho khổ giấy của Page Setup, để `/PT` không phụ thuộc máy in mặc định.
 - Hộp in của Windows 11 nằm ngoài tiến trình, nên test tự động dừng ở `IPrinterService` giả; phần GDI được test thật
   trên Microsoft Print to PDF (in ra file trong thư mục tạm qua `DOCINFOW.lpszOutput`).
-- Test Platform chạy với manifest comctl32 v6 (`tests/NotepadClassic.Platform.Tests/test.manifest`) như app, để có SysLink.
+- Test Platform chạy với manifest comctl32 v6 (`tests/NotepadNet.Platform.Tests/test.manifest`) như app, để có SysLink.
 
 <a id="autosave-va-restart-manager"></a>
 
@@ -311,8 +311,8 @@ Kiểm trên máy này ngày 2026-10-30 bằng Restart Manager thật, chỉ tr�
 `EM_REPLACESEL`, rồi `RmStartSession` + `RmRegisterResources` (PID và thời điểm khởi động) + `RmShutdown(0)` +
 `RmRestart`. Registry của gốc được export trước và khôi phục sau (xóa khóa rồi `reg import`, so bằng hash: giống hệt;
 khóa `Autosave\165A7C00-...` có sẵn của người dùng còn nguyên). Thư mục `%LOCALAPPDATA%\Notepad` do lần chạy gốc tạo ra
-(chỉ còn `probe.autosave`) đã được xóa. Port chạy với hive tạm và thư mục autosave tạm (`NOTEPADCLASSIC_AUTOSAVE_DIR`),
-không tạo `HKCU\Software\NotepadClassic`. Kết quả:
+(chỉ còn `probe.autosave`) đã được xóa. Port chạy với hive tạm và thư mục autosave tạm (`NOTEPADNET_AUTOSAVE_DIR`),
+không tạo `HKCU\Software\Notepad.NET`. Kết quả:
 
 - Cả hai: `GetApplicationRestartSettings` trả `RestartByRestartManager:<GUID>` cờ 0, mỗi lần chạy một GUID mới, nhóm
   thứ ba viết thường (`...-45a2-...`, `...-443c-...`). `RmShutdown` thành công không hỏi gì (0,05 s gốc, 0,1 s port),
@@ -333,7 +333,7 @@ không tạo `HKCU\Software\NotepadClassic`. Kết quả:
 | `CanAutosave`: tạo thư mục, tạo `probe.autosave` ẩn rồi để lại, đủ `(độ dài + 1) * 2` byte trống | `Win32AutosaveStore.CanSave` | `Can_save_creates_the_folder_and_leaves_no_probe_behind`, `Can_save_refuses_more_than_the_free_space` | cố ý khác | Probe của port mở với `FILE_FLAG_DELETE_ON_CLOSE`, không để lại gì (đã quan sát gốc để lại `probe.autosave`) |
 | `WM_ENDSESSION` (`wParam` khác 0 và `ENDSESSION_CLOSEAPP`): đặt cờ armed, lưu | `AutosaveService.EndSession` | `A_session_that_does_not_end_saves_nothing`, `An_ending_restart_manager_session_arms_and_saves`, `A_logoff_saves_dirty_text_without_arming`, `A_logoff_leaves_nothing_for_a_clean_document` | cố ý khác | Phiên kết thúc không có `ENDSESSION_CLOSEAPP` cũng lưu văn bản bẩn (không armed) |
 | `WM_CLOSE`: lưu cài đặt trước; bẩn và (chưa armed hoặc lưu lỗi) thì `CheckSave`; armed và lưu được thì đóng không hỏi | `AutosaveService.ConfirmClose`, `MainForm.OnFormClosing` | `Close_of_a_clean_document_never_asks`, `Close_of_dirty_text_saves_a_note_without_asking_and_releases_the_lock`, `Close_asks_when_the_note_cannot_be_saved`, `Close_of_an_armed_session_saves_again_without_asking`, `Close_of_an_armed_session_asks_when_the_save_fails`, `Close_of_an_armed_clean_document_keeps_its_manifest_for_the_restart`, `Restart_manager_close_saves_without_asking_and_a_restart_restores_the_text` | cố ý khác | Không cần armed: văn bản bẩn luôn được lưu không hỏi (xem "Ghi chú chưa lưu"). `CheckSave` chỉ còn khi lưu lỗi |
-| Lưu: encoding hiện tại, đường dẫn đầy đủ hoặc `*Untitled*`, thư mục hiện hành; văn bản bẩn ghi thành file; lỗi thì xóa khóa | `AutosaveService.Save`, `AutosaveManifest`, `Win32AutosaveStore` | `A_clean_document_saves_only_its_path_encoding_and_directory`, `An_untitled_document_saves_no_path`, `A_failed_text_write_leaves_no_manifest`, `A_failed_save_survives_a_failed_delete`, `Text_is_raw_utf16_le_and_each_write_replaces_the_file_whole`, `Manifest_round_trips_as_utf8` | cố ý khác (định dạng) | `%LOCALAPPDATA%\NotepadClassic\Autosave\<GUID>.json` (manifest JSON `version` 1, encoding theo tên) và `<GUID>.txt` (UTF-16 LE thô), không dùng registry. Văn bản ghi trước manifest; mỗi file ghi ra `.tmp`, flush xuống đĩa rồi đổi tên, nên phiên bị cắt giữa chừng không để lại file dở |
+| Lưu: encoding hiện tại, đường dẫn đầy đủ hoặc `*Untitled*`, thư mục hiện hành; văn bản bẩn ghi thành file; lỗi thì xóa khóa | `AutosaveService.Save`, `AutosaveManifest`, `Win32AutosaveStore` | `A_clean_document_saves_only_its_path_encoding_and_directory`, `An_untitled_document_saves_no_path`, `A_failed_text_write_leaves_no_manifest`, `A_failed_save_survives_a_failed_delete`, `Text_is_raw_utf16_le_and_each_write_replaces_the_file_whole`, `Manifest_round_trips_as_utf8` | cố ý khác (định dạng) | `%LOCALAPPDATA%\Notepad.NET\Autosave\<GUID>.json` (manifest JSON `version` 1, encoding theo tên) và `<GUID>.txt` (UTF-16 LE thô), không dùng registry. Văn bản ghi trước manifest; mỗi file ghi ra `.tmp`, flush xuống đĩa rồi đổi tên, nên phiên bị cắt giữa chừng không để lại file dở |
 | Dữ liệu `"%i,%s,%s"` tách theo dấu phẩy: đường dẫn autosave hoặc thư mục có dấu phẩy làm hỏng | `AutosaveManifest` | `Manifest_round_trips_paths_with_commas`, `Restart_manager_close_saves_without_asking_and_a_restart_restores_the_text` | cố ý khác | JSON không có vấn đề này. Probe thật dùng thư mục có dấu phẩy |
 | Khôi phục: `SetCurrentDirectoryW`; bẩn thì nạp file autosave (UTF-16 LE, giữ NUL, không `.LOG`), lấy đường dẫn, tiêu đề, encoding của file gốc, `EM_SETMODIFY(TRUE)`; sạch có tên thì mở lại theo đường dẫn với encoding cũ; sạch chưa đặt tên thì không làm gì; rồi xóa dữ liệu | `AutosaveService.Restore`, `DocumentService.RestoreAutosavedText` | `Dirty_text_comes_back_with_the_documents_path_title_and_encoding`, `Dirty_untitled_text_comes_back_untitled_and_dirty`, `Restored_text_keeps_nuls_a_leading_bom_character_and_gets_no_log_stamp`, `A_clean_document_is_opened_again_by_path_with_its_encoding`, `A_clean_document_whose_file_is_gone_shows_the_file_error`, `A_clean_untitled_document_opens_nothing`, `A_directory_that_cannot_be_made_current_does_not_stop_the_restore`, `Saved_state_restores_in_a_new_run` | giống | Kiểm bằng `RmRestart` (trên). File văn bản không có BOM nên ký tự U+FEFF đầu văn bản được giữ. Port chuyển văn bản bẩn sang mục của phiên mới trước khi xóa mục cũ, nên sau khôi phục thư mục vẫn còn một mục (xem "Ghi chú chưa lưu") |
 | Nạp file autosave lỗi vẫn gán tên file gốc, đánh dấu bẩn và xóa dữ liệu | `AutosaveService.Restore`, `DocumentService.RestoreAutosavedText` | `A_text_file_that_fails_to_load_keeps_the_data_and_the_untitled_document`, `A_text_the_editor_refuses_keeps_the_data` | cố ý khác | Port báo lỗi file, giữ tài liệu Untitled trống (để không ghi đè file gốc bằng văn bản rỗng) và giữ dữ liệu để chạy lại cùng dòng lệnh |
@@ -352,8 +352,8 @@ Quyết định của giai đoạn f:
   máy khởi động lại; mất văn bản chưa lưu tệ hơn để thừa vài file), 1 ngày cho phiên thiếu manifest (đủ để không xóa
   phiên của cửa sổ khác đang ghi). Dọn sau khi xử lý dòng lệnh để phiên đang khôi phục được dùng trước.
 - Nạp lỗi: giữ Untitled thay vì gán tên file gốc như gốc, vì gán tên với văn bản rỗng bẩn khiến Save ghi đè file gốc.
-- Biến môi trường `NOTEPADCLASSIC_AUTOSAVE_DIR` đổi thư mục autosave cho test và E2E, giống
-  `NOTEPADCLASSIC_SETTINGS_HIVE`.
+- Biến môi trường `NOTEPADNET_AUTOSAVE_DIR` đổi thư mục autosave cho test và E2E, giống
+  `NOTEPADNET_SETTINGS_HIVE`.
 
 <a id="hieu-nang"></a>
 
@@ -383,9 +383,9 @@ Số đo, phương pháp và công cụ nằm trong `performance.md`. Quyết đ
 
 ## E2E và hoàn thiện (giai đoạn h)
 
-`tests/NotepadClassic.E2E.Tests` dùng FlaUI (UIA3) chạy `NotepadClassic.exe` đã build, mỗi test một tiến trình với
-thư mục tạm, hive settings tạm (`NOTEPADCLASSIC_SETTINGS_HIVE`) và thư mục autosave tạm
-(`NOTEPADCLASSIC_AUTOSAVE_DIR`). Mọi chỗ chờ là chờ theo điều kiện (`Wait.Until`, hỏi lại mỗi 25 ms, tối đa 20 s),
+`tests/NotepadNet.E2E.Tests` dùng FlaUI (UIA3) chạy `Notepad.NET.exe` đã build, mỗi test một tiến trình với
+thư mục tạm, hive settings tạm (`NOTEPADNET_SETTINGS_HIVE`) và thư mục autosave tạm
+(`NOTEPADNET_AUTOSAVE_DIR`). Mọi chỗ chờ là chờ theo điều kiện (`Wait.Until`, hỏi lại mỗi 25 ms, tối đa 20 s),
 không có `Sleep` cố định. App ghi gì ra stderr (exception không bắt) thì test đỏ. 8 test, xanh 3 lần liên tiếp
 (2026-10-30):
 
@@ -419,7 +419,7 @@ lấy được foreground cho tới khi người dùng hoặc test bấm phím/c
 vẫn thuộc app, nếu không thì ném lỗi nêu rõ cửa sổ và tiến trình đã cướp foreground thay vì chờ hết 20 s. Không tăng
 thời gian chờ nào.
 
-`tests/NotepadClassic.ParityProbes` (console, không phải test project, không chạy trong CI) lái Notepad gốc bằng FlaUI
+`tests/NotepadNet.ParityProbes` (console, không phải test project, không chạy trong CI) lái Notepad gốc bằng FlaUI
 để kiểm lại các quan sát đã ghi: Go To xám khi Word Wrap bật (`goto-wordwrap`), Restart Manager lưu không hỏi và khôi
 phục văn bản bẩn (`restart-manager`). Trước khi chạy nó export `HKCU\Software\Microsoft\Notepad`, sau đó xóa khóa,
 `reg import` và so byte với bản export; file trong `%LOCALAPPDATA%\Notepad` do gốc tạo được xóa. Lần chạy 2026-10-30:
@@ -440,7 +440,7 @@ Quyết định của giai đoạn h:
 
 | Hành vi gốc | Nơi cài đặt | Test | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| `IFileOpenDialog`/`IFileSaveDialog`, đuôi `txt`, 2 loại file, combobox Encoding: ANSI, UTF-16 LE, UTF-16 BE, UTF-8, UTF-8 with BOM (+ GB18030 khi ACP 936); Open có Auto-Detect chọn sẵn | `Win32DialogService`, `Platform/Interop/FileDialogCom.cs` | `Encoding_combo_items_and_selection` | giống | E2E 2026-10-29: Save As thật ghi `Hello` thành UTF-8 không BOM, tiêu đề thành `saved.txt - Notepad Classic`; Open hiện "Encoding: Auto-Detect" |
+| `IFileOpenDialog`/`IFileSaveDialog`, đuôi `txt`, 2 loại file, combobox Encoding: ANSI, UTF-16 LE, UTF-16 BE, UTF-8, UTF-8 with BOM (+ GB18030 khi ACP 936); Open có Auto-Detect chọn sẵn | `Win32DialogService`, `Platform/Interop/FileDialogCom.cs` | `Encoding_combo_items_and_selection` | giống | E2E 2026-10-29: Save As thật ghi `Hello` thành UTF-8 không BOM, tiêu đề thành `saved.txt - Notepad.NET`; Open hiện "Encoding: Auto-Detect" |
 | Vị trí hộp Open, Save As, Font: theo gốc vùng client của cửa sổ chủ | `DialogPlacement.WhileShowing` (hook `WH_CBT` của luồng, `HCBT_ACTIVATE`) | `While_showing_moves_the_first_dialog_down_once_and_unhooks` | giống | *(quan sát khi so hình)* Trước đây cả ba của port cao hơn gốc 30 px (menu nằm trong vùng client). Đo lại 2026-10-29, cửa sổ chính ở (100,100) 1500×1050, 144 DPI: Open và Save As ở offset (11,75), Font ở (44,244), trùng gốc. Cờ `ChooseFontW` giữ nguyên `0x01010041` |
 | Hỏi lưu bằng `TaskDialogIndirect`: "&Save" (6), "Do&n't Save" (7), Cancel, mặc định Save, không icon; lỗi thì `MessageBoxW(MB_YESNOCANCEL)` | `Win32DialogService.AskSaveChanges` | E2E thủ công (2026-10-29) | giống | |
 
@@ -503,7 +503,7 @@ So ngày 2026-10-29 cùng điều kiện như trên (registry export trước, t
 
 Lần so đầu tiên các hộp của port nằm cao hơn 30 px (bằng chiều cao menu ở 144 DPI); đã sửa bằng `DialogPlacement`.
 
-Font mặc định trên máy này khác: `HKLM\Software\Microsoft\Notepad\DefaultFonts` có `Consolas`/110 nên Notepad gốc dùng Consolas 11; bản port đọc khóa máy riêng `HKLM\Software\NotepadClassic\DefaultFonts` (chưa có trên máy này) nên dùng Lucida Console 10.
+Font mặc định trên máy này khác: `HKLM\Software\Microsoft\Notepad\DefaultFonts` có `Consolas`/110 nên Notepad gốc dùng Consolas 11; bản port đọc khóa máy riêng `HKLM\Software\Notepad.NET\DefaultFonts` (chưa có trên máy này) nên dùng Lucida Console 10.
 
 <a id="trong-suot"></a>
 
@@ -624,6 +624,19 @@ Notepad classic không báo gì và ghi đè không hỏi. Port ghi nhớ thời
 | Không hỏi khi không có gì để mất: Untitled, file đã bị xóa, không đọc được dấu | `DocumentService.AskIfChangedOnDisk` | `Nothing_is_asked_when_there_is_nothing_to_lose`, `A_new_document_forgets_the_file_it_replaced` | File bị xóa thì Save tạo lại như gốc |
 | Save As không hỏi thêm | `DocumentService.SaveAs` | `Save_as_over_the_same_file_does_not_ask_a_second_time` | Hộp Save As đã hỏi trước khi thay file |
 | Mọi lần ghi đều tính, kể cả khi nội dung không đổi | | `A_write_that_keeps_the_length_and_content_still_counts` | Công cụ chỉ đổi thời gian của file (đồng bộ đám mây, `touch`) có thể gây hỏi thừa; đọc lại và so nội dung thì tốn với file lớn nên không làm |
+
+<a id="doi-ten"></a>
+
+## Đổi tên từ Notepad Classic (tính năng thêm của port)
+
+App tên là Notepad Classic tới v1.0.0, nên người đang dùng bản đó có settings và ghi chú dưới tên cũ. Ghi chú là bản duy nhất của văn bản, nên lần chạy đầu dưới tên mới phải mang chúng theo.
+
+| Hành vi | Nơi cài đặt | Test | Ghi chú |
+|---|---|---|---|
+| Thư mục ghi chú mới chưa có mà thư mục cũ có: chuyển `%LOCALAPPDATA%\NotepadClassic\Autosave` sang `%LOCALAPPDATA%\Notepad.NET\Autosave` | `Win32AutosaveStore.TakeOverFolder` | `The_notes_of_the_earlier_name_move_to_the_new_folder`, `An_existing_new_folder_is_left_as_it_is` | Bỏ qua khi `NOTEPADNET_AUTOSAVE_DIR` được đặt |
+| Chuyển không được, chẳng hạn cửa sổ của bản cũ còn giữ ghi chú: lần chạy này dùng thư mục cũ, lần sau thử lại | `Win32AutosaveStore.TakeOverFolder` | `A_note_held_by_an_old_window_keeps_the_earlier_folder_in_use` | Để ghi chú không biến mất |
+| Khóa mới chưa có mà khóa cũ có: chép mọi giá trị của `HKCU\Software\NotepadClassic` sang `HKCU\Software\Notepad.NET` trước khi đọc settings; khóa cũ giữ nguyên | `Win32SettingsRegistry.TakeOverPreviousUserKey` | `The_key_of_the_earlier_name_is_copied_once_and_stays`, `Nothing_happens_without_a_key_of_the_earlier_name`, `An_existing_key_is_not_overwritten` | Chép từng giá trị vì `RegCopyTree` bị từ chối trong application hive (`ERROR_ACCESS_DENIED`, đo 2026-11-04); khóa không có khóa con. Chạy trước `ImportLegacy`, nên settings của bản cũ thắng settings của Notepad gốc |
+| Khóa máy `HKLM\Software\NotepadClassic\DefaultFonts` không được chuyển | | | App không ghi HKLM; quản trị viên đã đặt khóa này cần đặt lại dưới tên mới |
 
 ## Các phần chưa làm
 

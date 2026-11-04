@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Not a test project and not run in CI: drives a copy of the original Notepad
+    (its path is the exe option of the command line) with FlaUI to re-check
+    behaviors parity.md records as observed on the original. HKCU\Software\Microsoft\Notepad is
+    exported first and restored afterwards (delete, import, compare).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>NotepadNet.ParityProbes</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="FlaUI.UIA3" />
+  </ItemGroup>
+</Project>

@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-  Regenerates the encoding golden files in tests/NotepadClassic.Platform.Tests/TestData/encoding.
+  Regenerates the encoding golden files in tests/NotepadNet.Platform.Tests/TestData/encoding.
   The files are committed; rerun only to change the set. Every file is described in the README there.
 #>
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
-$dir = Join-Path $PSScriptRoot '..\tests\NotepadClassic.Platform.Tests\TestData\encoding'
+$dir = Join-Path $PSScriptRoot '..\tests\NotepadNet.Platform.Tests\TestData\encoding'
 New-Item -ItemType Directory -Force $dir | Out-Null
 
 # Code page encodings (1258, 936, 54936) need the provider on .NET; Windows PowerShell has them built in.

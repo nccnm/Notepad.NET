@@ -23,25 +23,25 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore NotepadClassic.slnx
+        run: dotnet restore NotepadNet.slnx
 
       - name: Build (warnings are errors)
-        run: dotnet build NotepadClassic.slnx -c Release --no-restore
+        run: dotnet build NotepadNet.slnx -c Release --no-restore
 
       - name: Core tests with coverage gate (90% line and branch)
         run: >
-          dotnet test --project tests/NotepadClassic.Core.Tests -c Release --no-build --
-          --coverlet --coverlet-include "[NotepadClassic.Core]*"
+          dotnet test --project tests/NotepadNet.Core.Tests -c Release --no-build --
+          --coverlet --coverlet-include "[NotepadNet.Core]*"
           --coverlet-threshold 90 --coverlet-threshold-type line,branch --coverlet-threshold-stat Total
 
       - name: Platform integration tests
-        run: dotnet test --project tests/NotepadClassic.Platform.Tests -c Release --no-build
+        run: dotnet test --project tests/NotepadNet.Platform.Tests -c Release --no-build
 
       - name: App shell tests
-        run: dotnet test --project tests/NotepadClassic.App.Tests -c Release --no-build
+        run: dotnet test --project tests/NotepadNet.App.Tests -c Release --no-build
 
       - name: End-to-end tests (FlaUI on the built exe)
-        run: dotnet test --project tests/NotepadClassic.E2E.Tests -c Release --no-build
+        run: dotnet test --project tests/NotepadNet.E2E.Tests -c Release --no-build
 
       - name: Publish and package
         shell: pwsh
@@ -56,12 +56,12 @@ jobs:
           foreach ($v in $variants) {
             # Publishes of the same runtime identifier share obj\...\<rid>; ReadyToRun output left there by
             # another mode makes the exe fail fast at startup (docs/performance.md).
-            Remove-Item "src/NotepadClassic.App/obj/Release/net10.0-windows/$($v.Rid)" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item "src/NotepadNet.App/obj/Release/net10.0-windows/$($v.Rid)" -Recurse -Force -ErrorAction SilentlyContinue
             $dir = "publish/$($v.Name)"
-            dotnet publish src/NotepadClassic.App -c Release -r $v.Rid $v.Mode -p:PublishSingleFile=true "-p:Version=$version" -o $dir
+            dotnet publish src/NotepadNet.App -c Release -r $v.Rid $v.Mode -p:PublishSingleFile=true "-p:Version=$version" -o $dir
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             Copy-Item LICENSE $dir
-            Compress-Archive -Path "$dir/NotepadClassic.exe", "$dir/LICENSE" -DestinationPath "dist/NotepadClassic-$version-$($v.Name).zip"
+            Compress-Archive -Path "$dir/Notepad.NET.exe", "$dir/LICENSE" -DestinationPath "dist/Notepad.NET-$version-$($v.Name).zip"
           }
           Get-ChildItem dist/*.zip | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } |
             Set-Content dist/SHA256SUMS.txt -Encoding ascii
@@ -70,10 +70,10 @@ jobs:
       - name: Smoke test the x64 builds
         shell: pwsh
         run: |
-          $env:NOTEPADCLASSIC_SETTINGS_HIVE = "$env:RUNNER_TEMP\smoke-hive.dat"
-          $env:NOTEPADCLASSIC_AUTOSAVE_DIR = "$env:RUNNER_TEMP\smoke-autosave"
+          $env:NOTEPADNET_SETTINGS_HIVE = "$env:RUNNER_TEMP\smoke-hive.dat"
+          $env:NOTEPADNET_AUTOSAVE_DIR = "$env:RUNNER_TEMP\smoke-autosave"
           foreach ($name in 'win-x64', 'win-x64-framework-dependent') {
-            $process = Start-Process "publish/$name/NotepadClassic.exe" -PassThru
+            $process = Start-Process "publish/$name/Notepad.NET.exe" -PassThru
             $deadline = (Get-Date).AddSeconds(30)
             while ($process.MainWindowHandle -eq 0 -and -not $process.HasExited -and (Get-Date) -lt $deadline) {
               Start-Sleep -Milliseconds 100
@@ -98,17 +98,17 @@ jobs:
 
           | File | For |
           |---|---|
-          | ``NotepadClassic-$version-win-x64.zip`` | Most Windows 10/11 PCs. Nothing else to install. |
-          | ``NotepadClassic-$version-win-arm64.zip`` | Windows on ARM (Snapdragon). Nothing else to install. |
-          | ``NotepadClassic-$version-win-x64-framework-dependent.zip`` | Small download for PCs that have the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0). |
+          | ``Notepad.NET-$version-win-x64.zip`` | Most Windows 10/11 PCs. Nothing else to install. |
+          | ``Notepad.NET-$version-win-arm64.zip`` | Windows on ARM (Snapdragon). Nothing else to install. |
+          | ``Notepad.NET-$version-win-x64-framework-dependent.zip`` | Small download for PCs that have the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0). |
 
-          Unzip anywhere and run ``NotepadClassic.exe``; there is no installer. The exe is not code-signed, so Windows SmartScreen may warn on first run (More info, then Run anyway).
+          Unzip anywhere and run ``Notepad.NET.exe``; there is no installer. The exe is not code-signed, so Windows SmartScreen may warn on first run (More info, then Run anyway).
 
-          Settings are kept in ``HKCU\Software\NotepadClassic``; to remove the app, delete the folder and that key. ``SHA256SUMS.txt`` lists the checksums of the zips.
+          Settings are kept in ``HKCU\Software\Notepad.NET``; to remove the app, delete the folder and that key. ``SHA256SUMS.txt`` lists the checksums of the zips.
 
           "@
           Set-Content release-notes.md $notes -Encoding utf8
-          $options = @('--title', "Notepad Classic $version", '--notes-file', 'release-notes.md', '--generate-notes')
+          $options = @('--title', "Notepad.NET $version", '--notes-file', 'release-notes.md', '--generate-notes')
           if ($version.Contains('-')) { $options += '--prerelease' }
           gh release create $tag (Get-ChildItem dist).FullName @options
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

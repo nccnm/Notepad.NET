@@ -71,10 +71,10 @@ dotnet_diagnostic.IDE0005.severity = warning
 dotnet_diagnostic.IDE0161.severity = warning
 
 # Interop code names Win32 constants as in the SDK headers.
-[src/NotepadClassic.Platform/Interop/**.cs]
+[src/NotepadNet.Platform/Interop/**.cs]
 dotnet_diagnostic.CA1707.severity = none
 dotnet_naming_rule.constants.severity = none
 
-[src/NotepadClassic.App/Interop/**.cs]
+[src/NotepadNet.App/Interop/**.cs]
 dotnet_diagnostic.CA1707.severity = none
 dotnet_naming_rule.constants.severity = none

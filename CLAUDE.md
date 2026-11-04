@@ -6,7 +6,7 @@ The full end-to-end suite takes several minutes and needs the desktop left alone
 Otherwise run only the end-to-end tests of the feature just implemented or changed:
 
 ```
-dotnet test --project tests/NotepadClassic.E2E.Tests -c Release --no-build --filter-class "NotepadClassic.E2E.Tests.<ClassName>"
+dotnet test --project tests/NotepadNet.E2E.Tests -c Release --no-build --filter-class "NotepadNet.E2E.Tests.<ClassName>"
 ```
 
 Build first, since `--no-build` runs the existing binaries. In the end-of-task report, name the end-to-end classes
