@@ -27,8 +27,19 @@ function Run-Setup($file, [string[]]$arguments) {
     if ($process.ExitCode -ne 0) { throw "$file $arguments exited with $($process.ExitCode)." }
 }
 
-function Install([string]$tasks) { Run-Setup $Setup @("/TASKS=`"$tasks`"", "/LOG=`"$env:RUNNER_TEMP\setup.log`"") }
-function Uninstall { Run-Setup (Join-Path $InstallDir 'unins000.exe') @() ; for ($i = 0; $i -lt 100 -and (Test-Path -LiteralPath $Exe); $i++) { Start-Sleep -Milliseconds 100 } }
+function Install([string]$tasks) {
+    Run-Setup $Setup @("/TASKS=`"$tasks`"", "/LOG=`"$env:RUNNER_TEMP\setup.log`"")
+    $log = Join-Path $InstallDir 'notepad-command.log'
+    if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log | Select-Object -Last 3 | ForEach-Object { "  log: $_" } }
+}
+
+# unins000.exe hands over to a copy of itself and returns at once; it removes itself last.
+function Uninstall {
+    $uninstaller = Join-Path $InstallDir 'unins000.exe'
+    Run-Setup $uninstaller @()
+    for ($i = 0; $i -lt 300 -and (Test-Path -LiteralPath $uninstaller); $i++) { Start-Sleep -Milliseconds 100 }
+    if (Test-Path -LiteralPath $uninstaller) { throw 'The uninstaller did not finish.' }
+}
 
 function Hash($path) { if (Test-Path -LiteralPath $path) { (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash } else { 'none' } }
 function AutoRun { (Get-ItemProperty $CommandProcessor -Name AutoRun -ErrorAction SilentlyContinue).AutoRun }
@@ -39,6 +50,10 @@ function Clear-All {
     Remove-Item $AppPaths -Recurse -Force -ErrorAction SilentlyContinue
     Remove-ItemProperty $CommandProcessor -Name AutoRun -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $Profile7, $Profile5 -Force -ErrorAction SilentlyContinue
+}
+
+function Show-SetupLog {
+    Select-String -LiteralPath "$env:RUNNER_TEMP\setup.log" -Pattern 'Tasks|Filename:|powershell|exit code|Process exit' | ForEach-Object { "  setup: $($_.Line)" }
 }
 
 function Expect-Enabled {
@@ -82,6 +97,7 @@ Check 'Open with forgets the app' (-not (Test-Path 'HKCU:\Software\Classes\Appli
 "== With the task on a machine without any of these settings"
 Clear-All
 Install 'notepadcommand'
+Show-SetupLog
 Expect-Enabled
 Assert-OpensTheApp
 Uninstall
@@ -95,6 +111,7 @@ Clear-All
 New-Item $AppPaths -Force | Out-Null
 Set-ItemProperty $AppPaths '(default)' 'C:\Before\notepad.exe'
 Set-ItemProperty $AppPaths 'Path' 'C:\Before'
+New-Item $CommandProcessor -Force -ErrorAction SilentlyContinue | Out-Null
 New-ItemProperty $CommandProcessor -Name AutoRun -Value 'set BEFORE=1' -PropertyType String -Force | Out-Null
 New-Item -ItemType Directory -Force (Split-Path $Profile7), (Split-Path $Profile5) | Out-Null
 [IO.File]::WriteAllBytes($Profile7, [byte[]](0xEF, 0xBB, 0xBF) + [Text.Encoding]::UTF8.GetBytes("function notepad { 'mine' }`n# ti$([char]0x1EBF)ng Vi$([char]0x1EC7)t, no newline at the end"))
