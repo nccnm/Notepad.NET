@@ -186,6 +186,16 @@ internal sealed class FakeShell : IShell
     }
 
     public void AddToRecentDocuments(string path) => RecentDocuments.Add(path);
+
+    public List<string> ShownInFolder { get; } = [];
+
+    public bool ShowInFolderResult { get; set; } = true;
+
+    public bool ShowInFolder(string path)
+    {
+        ShownInFolder.Add(path);
+        return ShowInFolderResult;
+    }
 }
 
 internal sealed class FakeClipboard : IClipboard
@@ -193,6 +203,20 @@ internal sealed class FakeClipboard : IClipboard
     public bool HasText { get; set; }
 
     public bool ContainsText() => HasText;
+
+    public List<string> Written { get; } = [];
+
+    public bool SetTextResult { get; set; } = true;
+
+    public bool SetText(string text)
+    {
+        if (SetTextResult)
+        {
+            Written.Add(text);
+        }
+
+        return SetTextResult;
+    }
 }
 
 internal sealed class FakeFileTitles : IFileTitleProvider

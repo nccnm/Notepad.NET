@@ -134,6 +134,7 @@ internal static partial class ShlwApi
 internal static partial class User32
 {
     public const uint CF_TEXT = 1;
+    public const uint CF_UNICODETEXT = 13;
     public const uint MB_OKCANCEL = 0x1;
     public const uint MB_YESNOCANCEL = 0x3;
     public const uint MB_YESNO = 0x4;
@@ -163,6 +164,13 @@ internal static partial class User32
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool IsClipboardFormatAvailable(uint format);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool EmptyClipboard();
+
+    [LibraryImport("user32.dll")]
+    public static partial nint SetClipboardData(uint format, nint memory);
 
     [LibraryImport("user32.dll", EntryPoint = "MessageBoxW", StringMarshalling = StringMarshalling.Utf16)]
     public static partial int MessageBox(nint hWnd, string lpText, string lpCaption, uint uType);
@@ -201,6 +209,12 @@ internal static partial class Shell32
 
     [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
     public static partial void SHAddToRecentDocs(uint uFlags, string pv);
+
+    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial int SHParseDisplayName(string name, nint bindContext, out nint itemIdList, uint attributesWanted, out uint attributes);
+
+    [LibraryImport("shell32.dll")]
+    public static partial int SHOpenFolderAndSelectItems(nint itemIdList, uint count, nint children, uint flags);
 
     [LibraryImport("shell32.dll", EntryPoint = "ShellAboutW", StringMarshalling = StringMarshalling.Utf16)]
     public static partial int ShellAbout(nint hWnd, string szApp, string szOtherStuff, nint hIcon);

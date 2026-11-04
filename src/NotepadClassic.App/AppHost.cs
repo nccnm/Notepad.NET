@@ -139,7 +139,11 @@ internal sealed class AppHost : IDisposable
         services.AddSingleton<ITextBufferFactory>(LocalTextBufferFactory.Instance);
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IDateTimeFormatter, Win32DateTimeFormatter>();
-        services.AddSingleton<IClipboard, Win32Clipboard>();
+        services.AddSingleton<IClipboard>(sp =>
+        {
+            var window = sp.GetRequiredService<MainForm>();
+            return new Win32Clipboard(() => window.Handle);
+        });
         services.AddSingleton<IShell, Win32Shell>();
         services.AddSingleton<IFileTitleProvider, Win32FileTitleProvider>();
         services.AddSingleton<ISystemErrorMessages, Win32SystemErrorMessages>();

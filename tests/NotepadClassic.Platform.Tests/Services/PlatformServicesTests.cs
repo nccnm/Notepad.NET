@@ -120,6 +120,13 @@ public sealed class PlatformServicesTests : IDisposable
         Win32DateTimeFormatter.IsRtlLocale(0x0401).Should().BeTrue("ar-SA is right to left");
     }
 
+    // ---- Show in folder (only the failure: success opens an Explorer window, see the end-to-end tests) ----
+
+    [Fact]
+    [Trait("Doc", "parity.md#duong-dan-file")]
+    public void A_missing_folder_is_reported_as_a_failure() =>
+        new Win32Shell().ShowInFolder(Path.Combine(_dir, "gone", "note.txt")).Should().BeFalse();
+
     // ---- Clipboard (read only: the user's clipboard is never changed) ----
 
     [Fact]
@@ -128,7 +135,7 @@ public sealed class PlatformServicesTests : IDisposable
     {
         var expected = User32.IsClipboardFormatAvailable(User32.CF_TEXT);
 
-        new Win32Clipboard().ContainsText().Should().Be(expected);
+        new Win32Clipboard(() => 0).ContainsText().Should().Be(expected);
     }
 
     // ---- File title ----

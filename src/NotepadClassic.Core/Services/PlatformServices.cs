@@ -28,6 +28,10 @@ public interface IClipboard
     /// <summary>Whether Paste is enabled: the clipboard opens and offers <c>CF_TEXT</c>
     /// (<c>UpdateMenuState</c>; Windows synthesizes it from <c>CF_UNICODETEXT</c>).</summary>
     bool ContainsText();
+
+    /// <summary>Puts <paramref name="text"/> on the clipboard. False when another program holds the
+    /// clipboard or memory runs out; what was on it then normally stays.</summary>
+    bool SetText(string text);
 }
 
 public interface IShell
@@ -44,6 +48,10 @@ public interface IShell
 
     /// <summary><c>SHAddToRecentDocs(SHARD_PATHW)</c> after a successful load.</summary>
     void AddToRecentDocuments(string path);
+
+    /// <summary>Shows the file selected in its folder, or just the folder when the file is gone.
+    /// False when the folder cannot be shown either.</summary>
+    bool ShowInFolder(string path);
 }
 
 /// <summary>Name shown in the title bar for a saved document.</summary>

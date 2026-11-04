@@ -204,6 +204,8 @@ internal sealed class FakeShell : IShell
     public void StartNextNoteWindow() => NextNoteWindows++;
 
     public void AddToRecentDocuments(string path) => Recent.Add(path);
+
+    public bool ShowInFolder(string path) => true;
 }
 
 internal sealed class FakeClipboard : IClipboard
@@ -211,6 +213,8 @@ internal sealed class FakeClipboard : IClipboard
     public bool HasText { get; set; }
 
     public bool ContainsText() => HasText;
+
+    public bool SetText(string text) => true;
 }
 
 /// <summary>Records the restart command line instead of registering the test host.</summary>

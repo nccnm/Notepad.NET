@@ -71,6 +71,8 @@ public static class StringKeys
     public const string FileGoneNotice = nameof(FileGoneNotice);                 // port addition
     public const string ReloadButton = nameof(ReloadButton);                     // port addition
     public const string KeepButton = nameof(KeepButton);                         // port addition
+    public const string ClipboardBusy = nameof(ClipboardBusy);                   // port addition
+    public const string FolderCannotOpen = nameof(FolderCannotOpen);             // port addition
     public const string CannotFind = nameof(CannotFind);                         // MUI 6
     public const string GoToCaption = nameof(GoToCaption);                       // MUI 30
     public const string GoToBeyondEnd = nameof(GoToBeyondEnd);                   // MUI 31

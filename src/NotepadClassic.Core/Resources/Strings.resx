@@ -176,6 +176,14 @@
     <value>%1 was changed by another program. Do you want to reload it and lose your unsaved changes?</value>
     <comment>Port addition</comment>
   </data>
+  <data name="ClipboardBusy" xml:space="preserve">
+    <value>The path was not copied because another program is using the clipboard. Please try again.</value>
+    <comment>Port addition</comment>
+  </data>
+  <data name="FolderCannotOpen" xml:space="preserve">
+    <value>The folder of %1 cannot be opened. It may have been deleted or moved.</value>
+    <comment>Port addition</comment>
+  </data>
   <data name="FileGoneNotice" xml:space="preserve">
     <value>%1 was deleted or moved by another program. Your text is still here, and Save creates the file again.</value>
     <comment>Port addition</comment>
@@ -279,6 +287,14 @@
   <data name="Menu_File_SaveAs_Keys" xml:space="preserve">
     <value>Ctrl+Shift+S</value>
     <comment>menu</comment>
+  </data>
+  <data name="Menu_File_CopyFullPath" xml:space="preserve">
+    <value>&amp;Copy Full Path</value>
+    <comment>menu, port addition</comment>
+  </data>
+  <data name="Menu_File_OpenContainingFolder" xml:space="preserve">
+    <value>Open Containing Fo&amp;lder</value>
+    <comment>menu, port addition</comment>
   </data>
   <data name="Menu_File_DiscardChanges" xml:space="preserve">
     <value>&amp;Discard Changes</value>

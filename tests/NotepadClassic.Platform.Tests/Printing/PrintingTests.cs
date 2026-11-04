@@ -299,5 +299,7 @@ public sealed unsafe partial class PrintingTests : IDisposable
         public void AddToRecentDocuments(string path)
         {
         }
+
+        public bool ShowInFolder(string path) => true;
     }
 }

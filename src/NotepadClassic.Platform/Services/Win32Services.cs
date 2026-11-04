@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using NotepadClassic.Core.CommandLine;
 using NotepadClassic.Core.Editing;
 using NotepadClassic.Core.Services;
@@ -90,8 +91,91 @@ public sealed unsafe class Win32DateTimeFormatter : IDateTimeFormatter
 }
 
 /// <summary>Paste is enabled when the clipboard opens and offers <c>CF_TEXT</c>.</summary>
-public sealed class Win32Clipboard : IClipboard
+/// <param name="owner">The window that owns what is written: <c>SetClipboardData</c> needs one.</param>
+public sealed class Win32Clipboard(Func<nint> owner) : IClipboard
 {
+    private const int OpenAttempts = 10;
+    private const int OpenRetryMilliseconds = 50;
+
+    /// <summary>Another program may hold the clipboard for a moment, so opening is tried for about half
+    /// a second. The memory is prepared first, so that a failure there leaves the clipboard alone.</summary>
+    public bool SetText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var memory = Allocate(text);
+        if (memory == 0)
+        {
+            return false;
+        }
+
+        var handedOver = false;
+        try
+        {
+            if (!Open())
+            {
+                return false;
+            }
+
+            try
+            {
+                handedOver = User32.EmptyClipboard() && User32.SetClipboardData(User32.CF_UNICODETEXT, memory) != 0;
+                return handedOver;
+            }
+            finally
+            {
+                User32.CloseClipboard();
+            }
+        }
+        finally
+        {
+            if (!handedOver)
+            {
+                _ = Kernel32Ui.GlobalFree(memory);
+            }
+        }
+    }
+
+    private bool Open()
+    {
+        var window = owner();
+        for (var attempt = 1; ; attempt++)
+        {
+            if (User32.OpenClipboard(window))
+            {
+                return true;
+            }
+
+            if (attempt == OpenAttempts)
+            {
+                return false;
+            }
+
+            Thread.Sleep(OpenRetryMilliseconds);
+        }
+    }
+
+    private static unsafe nint Allocate(string text)
+    {
+        var bytes = (nuint)(text.Length + 1) * sizeof(char);
+        var memory = Kernel32Ui.GlobalAlloc(Kernel32Ui.GMEM_MOVEABLE, bytes);
+        if (memory == 0)
+        {
+            return 0;
+        }
+
+        var target = (char*)Kernel32Ui.GlobalLock(memory);
+        if (target == null)
+        {
+            _ = Kernel32Ui.GlobalFree(memory);
+            return 0;
+        }
+
+        text.AsSpan().CopyTo(new Span<char>(target, text.Length));
+        target[text.Length] = '\0';
+        Kernel32Ui.GlobalUnlock(memory);
+        return memory;
+    }
+
     public bool ContainsText()
     {
         if (!User32.OpenClipboard(0))
@@ -130,6 +214,34 @@ public sealed class Win32Shell : IShell
     }
 
     public void AddToRecentDocuments(string path) => Shell32.SHAddToRecentDocs(Shell32.SHARD_PATHW, path);
+
+    /// <summary>Through the shell API and not <c>explorer /select</c>, whose command line breaks on a comma in a path.</summary>
+    public bool ShowInFolder(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return SelectInFolder(path) || OpenFolder(Path.GetDirectoryName(path));
+    }
+
+    private static bool SelectInFolder(string path)
+    {
+        if (Shell32.SHParseDisplayName(path, 0, out var item, 0, out _) < 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            return Shell32.SHOpenFolderAndSelectItems(item, 0, 0, 0) >= 0;
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(item);
+        }
+    }
+
+    /// <summary><c>ShellExecuteW</c> reports success with a value above 32.</summary>
+    private static bool OpenFolder(string? folder) =>
+        Directory.Exists(folder) && Shell32.ShellExecute(0, "open", folder, null, null, Shell32.SW_SHOWNORMAL) > 32;
 }
 
 /// <summary>

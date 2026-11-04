@@ -292,6 +292,7 @@ internal static partial class Comdlg32
 internal static partial class Kernel32Ui
 {
     public const uint GMEM_FIXED = 0x0;
+    public const uint GMEM_MOVEABLE = 0x2;
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     public static partial nint GlobalAlloc(uint uFlags, nuint dwBytes);

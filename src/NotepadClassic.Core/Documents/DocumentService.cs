@@ -67,6 +67,9 @@ public sealed class DocumentService
 
     public DocumentState State { get; }
 
+    /// <summary>The file of the document, or null for an untitled one.</summary>
+    public string? FilePath => State.IsUntitled ? null : State.Path;
+
     /// <summary>The title was updated: the document got a new name, was saved, or became dirty or
     /// clean. Text changes that leave the title alone only raise <see cref="IEditorSurface.TextChanged"/>.</summary>
     public event EventHandler? TitleUpdated;

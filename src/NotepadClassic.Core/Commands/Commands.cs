@@ -56,6 +56,10 @@ public enum CommandId
 
     /// <summary>Port addition (File > Discard Changes); not in the original.</summary>
     DiscardChanges = 0x6B,
+
+    /// <summary>Port addition (File > Copy Full Path), like the one below; not in the original.</summary>
+    CopyFullPath = 0x6C,
+    OpenContainingFolder = 0x6D,
     Cut = 0x300,
     Copy = 0x301,
     Paste = 0x302,

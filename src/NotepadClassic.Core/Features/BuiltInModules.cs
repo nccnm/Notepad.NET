@@ -85,6 +85,8 @@ public sealed class FileModule : IFeatureModule
         registry.Command(CommandId.Save, c => c.Documents.Save());
         registry.Command(CommandId.SaveAs, c => c.Documents.SaveAs());
         registry.Command(CommandId.DiscardChanges, c => c.Documents.DiscardChanges(), c => c.Documents.IsDirty);
+        registry.Command(CommandId.CopyFullPath, CopyFullPath, HasFile);
+        registry.Command(CommandId.OpenContainingFolder, OpenContainingFolder, HasFile);
         registry.Command(CommandId.PageSetup, c => c.Printing.PageSetup());
         registry.Command(CommandId.Print, c => c.Printing.Print(PrinterChoice.Dialog));
         registry.Command(CommandId.Exit, c => c.Window.RequestClose());
@@ -96,9 +98,11 @@ public sealed class FileModule : IFeatureModule
         registry.Item(Menu, 0, 4, CommandId.Save, "Menu_File_Save", true);
         registry.Item(Menu, 0, 5, CommandId.SaveAs, "Menu_File_SaveAs", true);
         registry.Item(Menu, 0, 6, CommandId.DiscardChanges, "Menu_File_DiscardChanges");
-        registry.Item(Menu, 1, 0, CommandId.PageSetup, "Menu_File_PageSetup");
-        registry.Item(Menu, 1, 1, CommandId.Print, "Menu_File_Print", true);
-        registry.Item(Menu, 2, 0, CommandId.Exit, "Menu_File_Exit");
+        registry.Item(Menu, 1, 0, CommandId.CopyFullPath, "Menu_File_CopyFullPath");
+        registry.Item(Menu, 1, 1, CommandId.OpenContainingFolder, "Menu_File_OpenContainingFolder");
+        registry.Item(Menu, 2, 0, CommandId.PageSetup, "Menu_File_PageSetup");
+        registry.Item(Menu, 2, 1, CommandId.Print, "Menu_File_Print", true);
+        registry.Item(Menu, 3, 0, CommandId.Exit, "Menu_File_Exit");
 
         registry.Key(KeyTier.Global, VirtualKeys.Letter('N'), Contribution.Ctrl, CommandId.New);
         registry.Key(KeyTier.Global, VirtualKeys.Letter('N'), Contribution.CtrlShift, CommandId.NewWindow);
@@ -115,6 +119,25 @@ public sealed class FileModule : IFeatureModule
         registry.Key(KeyTier.SetupOnly, VirtualKeys.Letter('C'), Contribution.Ctrl, CommandId.Exit);
         registry.Key(KeyTier.SetupOnly, VirtualKeys.Letter('D'), Contribution.Ctrl, CommandId.Exit);
         registry.Key(KeyTier.SetupOnly, VirtualKeys.Letter('Z'), Contribution.Ctrl, CommandId.Exit);
+    }
+
+    private static bool HasFile(CommandContext c) => c.Documents.FilePath is not null;
+
+    private static void CopyFullPath(CommandContext c)
+    {
+        if (!c.Clipboard.SetText(c.Documents.FilePath!))
+        {
+            c.Dialogs.ShowMessage(c.Strings.GetString(StringKeys.ClipboardBusy), MessageKind.Warning);
+        }
+    }
+
+    private static void OpenContainingFolder(CommandContext c)
+    {
+        var path = c.Documents.FilePath!;
+        if (!c.Shell.ShowInFolder(path))
+        {
+            c.Dialogs.ShowMessage(MessageText.InsertArgument(c.Strings.GetString(StringKeys.FolderCannotOpen), path), MessageKind.Warning);
+        }
     }
 
     /// <summary>The submenu under Open: one command per place in the list, hidden while that place

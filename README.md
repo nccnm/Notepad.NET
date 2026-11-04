@@ -79,6 +79,9 @@ When another program changes or deletes the open file the window says so right a
 including a change made while the app was closed; further changes while that question is open bring no second one.
 Save also asks before writing over such a file: Overwrite, Save As (the default) or Cancel.
 
+File > Copy Full Path puts the path of the open file on the clipboard, and File > Open Containing Folder shows the
+file selected in Explorer. Both are grayed for an untitled document.
+
 Links the original hard-codes are read from `AssemblyMetadata` in the app project: `HelpUrl`, `FeedbackUrl` and
 `PageSetupHelpUrl` (the "Input Values" link of Page Setup). An empty value hides the menu item or the link.
 

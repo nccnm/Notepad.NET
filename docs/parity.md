@@ -589,6 +589,20 @@ Notepad classic không có lệnh này. Vì đóng cửa sổ không còn hỏi,
 | Kiểu xuống dòng của file giữ nguyên (CRLF, LF, CR, lẫn lộn), và Save sau đó ghi lại đúng từng byte | `EditorSurface.ReplaceSelection` | `The_file_comes_back_with_its_own_line_endings_and_the_document_is_clean`, `A_long_text_goes_back_whole` | Đã chạy trên Edit control thật |
 | File `.LOG` không được thêm dòng giờ | `DocumentService.DiscardChanges` | `A_log_file_gets_no_new_stamp_and_stays_clean` | Dòng giờ sẽ làm tài liệu vừa bỏ thay đổi lại bẩn |
 
+<a id="duong-dan-file"></a>
+
+## Đường dẫn file (tính năng thêm của port)
+
+Notepad classic không có hai lệnh này. Hai mục menu nằm thành một nhóm riêng sau `Discard Changes`, không thêm phím accelerator, nên hai bảng 20 và 8 phím giữ nguyên.
+
+| Hành vi | Nơi cài đặt | Test | Ghi chú |
+|---|---|---|---|
+| Hai mục xám khi tài liệu là Untitled, sáng khi có file, kể cả ghi chú đã trở lại và file đang sửa dở | `FileModule.HasFile`, `DocumentService.FilePath` | `Both_commands_are_grayed_for_an_untitled_document`, `A_file_saved_for_the_first_time_turns_them_on`, `An_untitled_document_grays_both_items` | |
+| `File > Copy Full Path`: đưa đường dẫn đầy đủ lên clipboard dạng `CF_UNICODETEXT`, không hỏi, văn bản và dấu `*` không đổi | `FileModule.CopyFullPath`, `Win32Clipboard.SetText` | `Copy_full_path_puts_the_path_on_the_clipboard_and_leaves_the_document_alone`, `A_file_opened_by_a_relative_name_copies_its_full_path` | Đường dẫn là của lần mở hoặc lưu cuối, kể cả khi file đã bị xóa |
+| Chương trình khác giữ clipboard: thử khoảng nửa giây, rồi báo; nội dung clipboard giữ nguyên | `Win32Clipboard.SetText` | `A_busy_clipboard_is_reported`, `A_clipboard_held_by_another_program_is_reported` | Bộ nhớ được chuẩn bị trước `EmptyClipboard`, để lỗi cấp phát không xóa clipboard |
+| `File > Open Containing Folder`: mở Explorer với file được chọn | `FileModule.OpenContainingFolder`, `Win32Shell.ShowInFolder` | `Open_containing_folder_shows_the_file`, `The_file_is_selected_in_explorer_even_with_a_comma_in_its_name` | Dùng `SHOpenFolderAndSelectItems`, không dùng `explorer /select` vì dòng lệnh đó vỡ khi đường dẫn có dấu phẩy. Ổ mạng treo có thể làm khựng cửa sổ, như Open |
+| File đã mất: mở thư mục, không chọn gì. Thư mục cũng mất: báo lỗi | `Win32Shell.ShowInFolder` | `A_file_that_is_gone_still_opens_its_folder`, `A_missing_folder_is_reported_as_a_failure`, `A_folder_that_cannot_be_shown_is_reported` | |
+
 <a id="file-doi-ben-ngoai"></a>
 
 ## File bị đổi từ bên ngoài (tính năng thêm của port)
