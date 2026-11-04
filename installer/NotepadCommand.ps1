@@ -49,6 +49,7 @@ function Test-ShellRunsProfiles($shell) {
         $env:PSExecutionPolicyPreference = $inherited
     }
 
+    Log "$shell execution policy: $policy"
     $policy -notin 'Restricted', 'AllSigned'
 }
 
