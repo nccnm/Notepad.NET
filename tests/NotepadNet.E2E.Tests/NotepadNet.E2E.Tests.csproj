@@ -19,6 +19,8 @@
   <ItemGroup>
     <!-- Built first; the tests start the exe from its output folder. -->
     <ProjectReference Include="..\..\src\NotepadNet.App\NotepadNet.App.csproj" ReferenceOutputAssembly="false" />
+    <!-- The rules the tests compare the app against, such as how the menu shortens a path. -->
+    <ProjectReference Include="..\..\src\NotepadNet.Core\NotepadNet.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
