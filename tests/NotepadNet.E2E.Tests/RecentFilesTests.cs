@@ -2,6 +2,7 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
+using NotepadNet.Core.Documents;
 
 namespace NotepadNet.E2E.Tests;
 
@@ -34,7 +35,8 @@ public sealed class RecentFilesTests
         return names;
     }
 
-    private static string Entry(int number, string path) => $"{number} {path}";
+    /// <summary>The name of a list entry; the menu shortens a long path, as under a long user name.</summary>
+    private static string Entry(int number, string path) => $"{number} {RecentFilesPolicy.DisplayPath(path)}";
 
     private static void Close(AppSession app) => app.CloseWithKeyboard();
 
