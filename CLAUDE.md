@@ -1,5 +1,10 @@
 # Agent instructions
 
+## Installer
+
+`installer/Test-Installer.ps1` changes the PowerShell profiles, `AutoRun` and `App Paths` of the current user, so it
+runs only on CI. Do not run the real setup or `installer/NotepadCommand.ps1` on the development machine either.
+
 ## End-to-end tests
 
 The full end-to-end suite takes several minutes and needs the desktop left alone. Run it only when the user asks.

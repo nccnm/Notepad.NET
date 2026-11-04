@@ -25,13 +25,19 @@ it, its tests, and whether the port matches the original or differs on purpose. 
 
 ## Download
 
-Get a zip from [Releases](https://github.com/nccnm/Notepad.NET/releases), unzip it anywhere and run
-`Notepad.NET.exe`; there is no installer. `win-x64` and `win-arm64` need nothing else; the smaller
-`win-x64-framework-dependent` needs the .NET 10 Desktop Runtime. The exe is not code-signed, so SmartScreen may
-warn on the first run.
+Get it from [Releases](https://github.com/nccnm/Notepad.NET/releases). Nothing is code-signed, so SmartScreen may warn
+on the first run.
+
+- **Setup** (`Notepad.NET-<version>-setup-x64.exe` or `-arm64.exe`): installs for the current user, without
+  administrator rights, and adds a Start menu entry and an Open with entry for `.txt` files. It can also make the
+  `notepad` command open Notepad.NET in PowerShell, cmd and Win+R: tick that box in the setup; removing the app, or
+  running the setup again without the box, puts back what was there. See `docs/installer.md`.
+- **Zip**: unzip anywhere and run `Notepad.NET.exe`. `win-x64` and `win-arm64` need nothing else; the smaller
+  `win-x64-framework-dependent` needs the .NET 10 Desktop Runtime. The `notepad` command still opens the Notepad of
+  Windows.
 
 To publish a release, push a tag: `git tag v1.0.0` then `git push origin v1.0.0`. The `Release` workflow runs the
-tests, builds the three single-file variants and creates the GitHub release (a tag with a suffix such as
+tests, builds the three single-file variants and the two setups, and creates the GitHub release (a tag with a suffix such as
 `v1.0.0-rc.1` makes a prerelease).
 
 ## Layout
@@ -51,6 +57,8 @@ tests, builds the three single-file variants and creates the GitHub release (a t
 | `assets/icon.svg` | Source of the app icon (drawn for this project) |
 | `docs/parity.md` | Every documented behavior of the original, where it is implemented, its test, and whether the port matches |
 | `docs/performance.md` | Budgets, measurements and how to repeat them |
+| `docs/installer.md` | What the setup changes on a machine, how it is built and tested |
+| `installer/` | Inno Setup script of the setup, the script behind the `notepad` command, and their build and test scripts |
 | `docs/local-install.md` | How the release build is installed as the `notepad` command (PowerShell, cmd, Win+R) on the development machine, and how to undo it |
 | `tools/` | Scripts that regenerate test data and `app.ico` (`New-AppIcon.ps1`, `IconGen/`) |
 
