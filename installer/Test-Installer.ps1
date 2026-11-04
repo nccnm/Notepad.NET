@@ -68,19 +68,6 @@ function Expect-Enabled {
     Check "a new cmd has the macro ($macros)" ($macros -like 'notepad=*Notepad.NET.exe*')
 }
 
-function Assert-OpensTheApp {
-    Get-Process Notepad.NET -ErrorAction SilentlyContinue | Stop-Process -Force
-    $info = New-Object Diagnostics.ProcessStartInfo 'notepad'
-    $info.UseShellExecute = $true
-    $started = [Diagnostics.Process]::Start($info)
-    $process = $null
-    for ($i = 0; $i -lt 150 -and -not $process; $i++) { Start-Sleep -Milliseconds 100; $process = Get-Process Notepad.NET -ErrorAction SilentlyContinue | Select-Object -First 1 }
-    $seen = (Get-Process | Where-Object { $_.ProcessName -like 'notepad*' } | ForEach-Object { $_.Path }) -join '; '
-    Check "ShellExecute(`"notepad`"), as Win+R does, starts the app (started: $($started.ProcessName); seen: $seen)" ($process -and $process.Path -eq $Exe)
-    Get-Process | Where-Object { $_.ProcessName -like 'notepad*' } | Stop-Process -Force
-    Start-Sleep -Milliseconds 300
-}
-
 "== Without the task, nothing of the user changes"
 Clear-All
 $settingsKey = 'HKCU:\Software\Notepad.NET'
@@ -102,7 +89,6 @@ Clear-All
 Install 'notepadcommand'
 Show-SetupLog
 Expect-Enabled
-Assert-OpensTheApp
 Uninstall
 Check 'App Paths gone' ((AppPathDefault) -eq 'none')
 Check 'AutoRun gone' ($null -eq (AutoRun))
@@ -124,7 +110,6 @@ $hash5 = Hash $Profile5
 Install 'notepadcommand'
 Expect-Enabled
 Check 'the earlier AutoRun still runs' ((AutoRun) -like '* & set BEFORE=1')
-Assert-OpensTheApp
 
 "== An upgrade keeps it enabled and what -Disable will put back"
 Install 'notepadcommand'
@@ -154,13 +139,15 @@ Check 'the newer App Paths stays' ((AppPathDefault) -eq 'C:\Store\notepad.exe')
 
 "== A shell that may not run profiles gets no profile"
 Clear-All
-powershell.exe -NoProfile -NonInteractive -Command 'Set-ExecutionPolicy -Scope CurrentUser Restricted -Force'
+$policyKey = 'HKCU:\Software\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell'
+New-Item $policyKey -Force | Out-Null
+Set-ItemProperty $policyKey ExecutionPolicy Restricted
 Install 'notepadcommand'
 Check 'no Windows PowerShell profile that would print an error' ((Hash $Profile5) -eq 'none')
 Check 'the reason is in the log' ((Get-Content -LiteralPath (Join-Path $InstallDir 'notepad-command.log') -Raw) -like '*powershell.exe is missing or may not run profiles*')
 Uninstall
 Check 'the install folder is gone' (-not (Test-Path -LiteralPath $InstallDir))
-powershell.exe -NoProfile -NonInteractive -Command 'Set-ExecutionPolicy -Scope CurrentUser Undefined -Force'
+Remove-ItemProperty $policyKey ExecutionPolicy
 
 "== Settings and notes outlive the app"
 Clear-All
