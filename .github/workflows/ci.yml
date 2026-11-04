@@ -51,19 +51,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ./installer/Build-Installer.ps1 -Version 0.0.0 -Arch x64 -SourceDir publish/win-x64 -OutDir dist
 
-      - name: Capture the wizard (temporary)
-        continue-on-error: true
-        shell: pwsh
-        run: ./installer/Capture-Wizard.ps1 -Setup dist/Notepad.NET-0.0.0-setup-x64.exe -OutDir wizard
-
-      - name: Upload the wizard pictures (temporary)
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: wizard
-          path: wizard/*.png
-          if-no-files-found: ignore
-
       - name: Install, upgrade and remove the setup
         shell: pwsh
         run: ./installer/Test-Installer.ps1 -Setup dist/Notepad.NET-0.0.0-setup-x64.exe
