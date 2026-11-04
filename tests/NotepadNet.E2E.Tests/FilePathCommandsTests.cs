@@ -97,9 +97,17 @@ public sealed partial class FilePathCommandsTests
         Wait.Until(() => app.Text == "text", "the file text");
         try
         {
-            Run(app, FolderItem);
-
-            Wait.Until(() => SelectedIn(app.Folder) == path, "the file selected in Explorer", () => DescribeExplorer(app.Folder));
+            // The command again while nothing is selected: on the CI runner Explorer ignores the selection for
+            // a window it has just opened, with explorer /select as well, and takes it once the window is open.
+            Wait.Until(
+                () =>
+                {
+                    Run(app, FolderItem);
+                    Thread.Sleep(1500);
+                    return SelectedIn(app.Folder) == path;
+                },
+                "the file selected in Explorer",
+                () => DescribeExplorer(app.Folder));
         }
         finally
         {
