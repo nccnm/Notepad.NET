@@ -48,6 +48,8 @@ Name: "{autoprograms}\Notepad.NET"; Filename: "{app}\Notepad.NET.exe"
 ; of the earlier name or of the original Notepad.
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\Notepad.NET.exe"; ValueType: string; ValueName: ""; ValueData: "{app}\Notepad.NET.exe"; Flags: uninsdeletekey
+; uninsdeletekey removes only the key it is on, so this entry takes the whole tree with it.
+Root: HKCU; Subkey: "Software\Classes\Applications\Notepad.NET.exe"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\Applications\Notepad.NET.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\Notepad.NET.exe"" ""%1"""; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\Applications\Notepad.NET.exe\SupportedTypes"; ValueType: string; ValueName: ".txt"; ValueData: ""; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\.txt\OpenWithList\Notepad.NET.exe"; Flags: uninsdeletekey

@@ -78,7 +78,9 @@ function Remove-ProfileBlock($path) {
 function Add-ProfileBlock($path, $exe) {
     $folder = Split-Path -Parent $path
     if (-not (Test-Path -LiteralPath $folder)) { [void][IO.Directory]::CreateDirectory($folder) }
-    $bytes = if (Test-Path -LiteralPath $path) { [IO.File]::ReadAllBytes($path) } else { [byte[]]@() }
+    # Not through an if expression: PowerShell turns the empty array it returns into null.
+    $bytes = New-Object byte[] 0
+    if (Test-Path -LiteralPath $path) { $bytes = [IO.File]::ReadAllBytes($path) }
     $encoding = Get-ProfileEncoding $bytes
     $target = if ($exe -cmatch '^[\x20-\x7E]*$') {
         "'" + $exe.Replace("'", "''") + "'"
