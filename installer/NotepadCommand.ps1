@@ -49,8 +49,10 @@ function Test-ShellRunsProfiles($shell) {
         $env:PSExecutionPolicyPreference = $inherited
     }
 
-    Log "$shell execution policy: $policy"
-    $policy -notin 'Restricted', 'AllSigned'
+    # Only a policy read for certain: under Restricted the command itself can fail to load its module, and
+    # the text of that error is no policy.
+    Log "$shell execution policy: $(($policy -split '\r?\n')[0])"
+    $policy -in 'RemoteSigned', 'Unrestricted', 'Bypass'
 }
 
 # Keeps the bytes of the rest of the file, whatever its encoding; the block itself is plain ASCII.
