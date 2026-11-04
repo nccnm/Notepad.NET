@@ -70,7 +70,7 @@ function Get-Definition($shell) {
 
 function Expect-Enabled {
     Check 'App Paths points at the app' ((AppPathDefault) -eq $Exe -and (AppPathFolder) -eq $InstallDir)
-    Check 'AutoRun has the macro' ((AutoRun) -like "doskey notepad=*Notepad.NET.exe*")
+    Check 'AutoRun has the macro' ((AutoRun) -like "*doskey notepad=*Notepad.NET.exe*")
     if (Get-Command pwsh -ErrorAction SilentlyContinue) {
         $definition = Get-Definition 'pwsh'
         Check "pwsh takes the function ($definition)" ($definition -like "Function*Notepad.NET.exe*")
@@ -115,7 +115,7 @@ New-Item $AppPaths -Force | Out-Null
 Set-ItemProperty $AppPaths '(default)' 'C:\Before\notepad.exe'
 Set-ItemProperty $AppPaths 'Path' 'C:\Before'
 New-Item $CommandProcessor -Force -ErrorAction SilentlyContinue | Out-Null
-New-ItemProperty $CommandProcessor -Name AutoRun -Value 'set BEFORE=1' -PropertyType String -Force | Out-Null
+New-ItemProperty $CommandProcessor -Name AutoRun -Value 'doskey notepad="C:\Before\notepad.exe" $*' -PropertyType String -Force | Out-Null
 New-Item -ItemType Directory -Force (Split-Path $Profile7), (Split-Path $Profile5) | Out-Null
 [IO.File]::WriteAllBytes($Profile7, [byte[]](0xEF, 0xBB, 0xBF) + [Text.Encoding]::UTF8.GetBytes("function notepad { 'mine' }`n# ti$([char]0x1EBF)ng Vi$([char]0x1EC7)t, no newline at the end"))
 [IO.File]::WriteAllBytes($Profile5, [Text.Encoding]::Unicode.GetPreamble() + [Text.Encoding]::Unicode.GetBytes("# utf-16`r`n"))
@@ -123,7 +123,7 @@ $hash7 = Hash $Profile7
 $hash5 = Hash $Profile5
 Install 'notepadcommand'
 Expect-Enabled
-Check 'the earlier AutoRun still runs' ((AutoRun) -like '* & set BEFORE=1')
+Check 'the earlier AutoRun still runs' ((AutoRun) -like 'doskey notepad="C:\Before\notepad.exe" $`* & *')
 
 "== An upgrade keeps it enabled and what -Disable will put back"
 Install 'notepadcommand'
@@ -133,7 +133,7 @@ Check 'the macro is there once' (([regex]::Matches((AutoRun), 'doskey notepad'))
 "== Turning the task off in a later run restores everything"
 Install ''
 Check 'App Paths restored' ((AppPathDefault) -eq 'C:\Before\notepad.exe' -and (AppPathFolder) -eq 'C:\Before')
-Check 'AutoRun restored' ((AutoRun) -eq 'set BEFORE=1')
+Check 'AutoRun restored' ((AutoRun) -ceq 'doskey notepad="C:\Before\notepad.exe" $*')
 Check 'pwsh profile restored byte for byte' ((Hash $Profile7) -eq $hash7)
 Check 'Windows PowerShell profile restored byte for byte' ((Hash $Profile5) -eq $hash5)
 
@@ -141,7 +141,7 @@ Check 'Windows PowerShell profile restored byte for byte' ((Hash $Profile5) -eq 
 Install 'notepadcommand'
 Uninstall
 Check 'App Paths restored' ((AppPathDefault) -eq 'C:\Before\notepad.exe' -and (AppPathFolder) -eq 'C:\Before')
-Check 'AutoRun restored' ((AutoRun) -eq 'set BEFORE=1')
+Check 'AutoRun restored' ((AutoRun) -ceq 'doskey notepad="C:\Before\notepad.exe" $*')
 Check 'pwsh profile restored byte for byte' ((Hash $Profile7) -eq $hash7)
 Check 'Windows PowerShell profile restored byte for byte' ((Hash $Profile5) -eq $hash5)
 

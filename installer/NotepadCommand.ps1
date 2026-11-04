@@ -112,7 +112,7 @@ function Remove-Macro($exe) {
         $value = $key.GetValue('AutoRun', $null, $KeepNames)
         if ($null -eq $value) { return }
         $macro = Get-Macro $exe
-        $rest = if ($value -eq $macro) { '' } else { $value.Replace("$macro & ", '') }
+        $rest = if ($value -eq $macro) { '' } else { $value.Replace(" & $macro", '') }
         if ($rest -eq $value) { return }
         if ($rest.Length -eq 0) { $key.DeleteValue('AutoRun') } else { $key.SetValue('AutoRun', $rest, $key.GetValueKind('AutoRun')) }
     }
@@ -130,7 +130,8 @@ function Add-Macro($exe) {
             $key.SetValue('AutoRun', $macro, [Microsoft.Win32.RegistryValueKind]::ExpandString)
         }
         else {
-            $key.SetValue('AutoRun', "$macro & $value", $key.GetValueKind('AutoRun'))
+            # Last, so that it wins over an earlier macro with the same name.
+            $key.SetValue('AutoRun', "$value & $macro", $key.GetValueKind('AutoRun'))
         }
     }
     finally {
