@@ -24,7 +24,7 @@ Mặc định không tick, vì nó thay một lệnh của Windows. `System32` �
 | Nơi gõ `notepad` | Cấu hình | Khi tắt hoặc gỡ |
 |---|---|---|
 | PowerShell 7 và Windows PowerShell | Khối có đánh dấu chứa `function notepad` ở cuối profile của mỗi shell | Chỉ bỏ khối đó, phần còn lại giữ nguyên từng byte. Profile do trình cài tạo thì bị xóa |
-| cmd | `doskey notepad="..." $*` thêm vào đầu giá trị `AutoRun` của `HKCU\Software\Microsoft\Command Processor`, `AutoRun` cũ vẫn chạy sau đó | Chỉ bỏ macro; giá trị do trình cài tạo thì bị xóa |
+| cmd | `doskey notepad="..." $*` thêm vào cuối giá trị `AutoRun` của `HKCU\Software\Microsoft\Command Processor`, sau `AutoRun` cũ, để thắng macro `notepad` đã có | Chỉ bỏ macro; giá trị do trình cài tạo thì bị xóa |
 | Win+R | `HKCU\...\App Paths\notepad.exe`; giá trị trước đó được lưu trong `HKCU\Software\Notepad.NET Setup` | Trả lại giá trị cũ, hoặc xóa khóa nếu trước đó không có. Nếu chương trình khác đã đổi khóa này, chẳng hạn Notepad bản Store khi cập nhật, thì để nguyên |
 
 Cấu hình được tắt khi gỡ app, hoặc khi chạy lại trình cài mà bỏ tick. Nâng cấp mà vẫn tick thì giữ giá trị cũ đã lưu.
