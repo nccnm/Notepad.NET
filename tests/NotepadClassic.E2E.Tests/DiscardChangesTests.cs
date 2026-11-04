@@ -1,4 +1,5 @@
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 
 namespace NotepadClassic.E2E.Tests;
@@ -149,7 +150,7 @@ public sealed class DiscardChangesTests
 
         // By keyboard: the error is modal, and a UIA Invoke would wait for it to close.
         app.Press(VirtualKeyShort.ALT, VirtualKeyShort.KEY_F);
-        app.Press(VirtualKeyShort.KEY_D);
+        Keyboard.Type(VirtualKeyShort.KEY_D);
 
         PressOk(app);
         app.Text.Should().Be(edited);
