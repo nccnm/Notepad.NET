@@ -128,7 +128,7 @@ Check 'the earlier AutoRun still runs' ((AutoRun) -like 'doskey notepad="C:\Befo
 "== An upgrade keeps it enabled and what -Disable will put back"
 Install 'notepadcommand'
 Expect-Enabled
-Check 'the macro is there once' (([regex]::Matches((AutoRun), 'doskey notepad')).Count -eq 1)
+Check 'the macro is there once' (([regex]::Matches((AutoRun), 'Notepad\.NET\.exe')).Count -eq 1)
 
 "== Turning the task off in a later run restores everything"
 Install ''
