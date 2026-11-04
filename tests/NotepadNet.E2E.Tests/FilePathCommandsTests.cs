@@ -99,7 +99,7 @@ public sealed partial class FilePathCommandsTests
         {
             Run(app, FolderItem);
 
-            Wait.Until(() => SelectedIn(app.Folder) == path, "the file selected in Explorer", () => SelectedIn(app.Folder) ?? "(nothing)");
+            Wait.Until(() => SelectedIn(app.Folder) == path, "the file selected in Explorer", () => DescribeExplorer(app.Folder));
         }
         finally
         {
@@ -176,6 +176,27 @@ public sealed partial class FilePathCommandsTests
 
         return null;
     });
+
+    /// <summary>What Explorer shows, for the message of a test that times out.</summary>
+    private static string DescribeExplorer(string folder)
+    {
+        try
+        {
+            var seen = new List<string>();
+            foreach (var window in ExplorerWindows())
+            {
+                string shown = Ask<string>(() => (string)window.Document.Folder.Self.Path) ?? "(no folder)";
+                int? count = Ask<int?>(() => (int)window.Document.SelectedItems().Count);
+                seen.Add($"{shown} selected={count?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "?"}");
+            }
+
+            return $"expected folder {folder}; windows: [{string.Join("; ", seen)}]";
+        }
+        catch (Exception e) when (e is COMException or RuntimeBinderException or InvalidCastException)
+        {
+            return $"expected folder {folder}; {e.GetType().Name}: {e.Message}";
+        }
+    }
 
     private static void CloseExplorer(string folder)
     {
