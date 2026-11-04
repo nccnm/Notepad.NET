@@ -1,7 +1,7 @@
 name: Release
 
-# Pushing a tag such as v1.0.0 runs the tests, publishes three single-file builds and attaches them to a
-# GitHub release. A tag with a suffix (v1.0.0-rc.1) makes a prerelease.
+# Pushing a tag such as v1.0.0 runs the tests, publishes three single-file builds, builds a setup for x64 and for
+# ARM64, and attaches them to a GitHub release. A tag with a suffix (v1.0.0-rc.1) makes a prerelease.
 on:
   push:
     tags: ['v*']
@@ -63,7 +63,9 @@ jobs:
             Copy-Item LICENSE $dir
             Compress-Archive -Path "$dir/Notepad.NET.exe", "$dir/LICENSE" -DestinationPath "dist/Notepad.NET-$version-$($v.Name).zip"
           }
-          Get-ChildItem dist/*.zip | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } |
+          ./installer/Build-Installer.ps1 -Version $version -Arch x64 -SourceDir publish/win-x64 -OutDir dist
+          ./installer/Build-Installer.ps1 -Version $version -Arch arm64 -SourceDir publish/win-arm64 -OutDir dist
+          Get-ChildItem dist/*.zip, dist/*.exe | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } |
             Set-Content dist/SHA256SUMS.txt -Encoding ascii
           Get-Content dist/SHA256SUMS.txt
 
@@ -86,6 +88,12 @@ jobs:
             $process.WaitForExit()
           }
 
+      - name: Install, upgrade and remove the x64 setup
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          ./installer/Test-Installer.ps1 -Setup "dist/Notepad.NET-$version-setup-x64.exe"
+
       - name: Create the release
         shell: pwsh
         env:
@@ -98,13 +106,15 @@ jobs:
 
           | File | For |
           |---|---|
-          | ``Notepad.NET-$version-win-x64.zip`` | Most Windows 10/11 PCs. Nothing else to install. |
-          | ``Notepad.NET-$version-win-arm64.zip`` | Windows on ARM (Snapdragon). Nothing else to install. |
+          | ``Notepad.NET-$version-setup-x64.exe`` | Setup for most Windows 10/11 PCs. No administrator rights needed. Can make the ``notepad`` command open Notepad.NET. |
+          | ``Notepad.NET-$version-setup-arm64.exe`` | The same for Windows on ARM (Snapdragon). |
+          | ``Notepad.NET-$version-win-x64.zip`` | No setup, for most Windows 10/11 PCs. Nothing else to install. |
+          | ``Notepad.NET-$version-win-arm64.zip`` | No setup, for Windows on ARM (Snapdragon). Nothing else to install. |
           | ``Notepad.NET-$version-win-x64-framework-dependent.zip`` | Small download for PCs that have the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0). |
 
-          Unzip anywhere and run ``Notepad.NET.exe``; there is no installer. The exe is not code-signed, so Windows SmartScreen may warn on first run (More info, then Run anyway).
+          Run the setup, or unzip anywhere and run ``Notepad.NET.exe``. Nothing is code-signed, so Windows SmartScreen may warn on first run (More info, then Run anyway).
 
-          Settings are kept in ``HKCU\Software\Notepad.NET``; to remove the app, delete the folder and that key. ``SHA256SUMS.txt`` lists the checksums of the zips.
+          Settings are kept in ``HKCU\Software\Notepad.NET`` and unsaved notes in ``%LOCALAPPDATA%\Notepad.NET``; removing the app leaves both. ``SHA256SUMS.txt`` lists the checksums of the files.
 
           "@
           Set-Content release-notes.md $notes -Encoding utf8
