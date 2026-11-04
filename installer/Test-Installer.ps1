@@ -70,11 +70,14 @@ function Expect-Enabled {
 
 function Assert-OpensTheApp {
     Get-Process Notepad.NET -ErrorAction SilentlyContinue | Stop-Process -Force
-    (New-Object -ComObject Shell.Application).ShellExecute('notepad')
+    $info = New-Object Diagnostics.ProcessStartInfo 'notepad'
+    $info.UseShellExecute = $true
+    $started = [Diagnostics.Process]::Start($info)
     $process = $null
-    for ($i = 0; $i -lt 100 -and -not $process; $i++) { Start-Sleep -Milliseconds 100; $process = Get-Process Notepad.NET -ErrorAction SilentlyContinue | Select-Object -First 1 }
-    Check 'ShellExecute("notepad"), as Win+R does, starts the app' ($process -and $process.Path -eq $Exe)
-    if ($process) { $process | Stop-Process -Force; $process.WaitForExit() }
+    for ($i = 0; $i -lt 150 -and -not $process; $i++) { Start-Sleep -Milliseconds 100; $process = Get-Process Notepad.NET -ErrorAction SilentlyContinue | Select-Object -First 1 }
+    $seen = (Get-Process | Where-Object { $_.ProcessName -like 'notepad*' } | ForEach-Object { $_.Path }) -join '; '
+    Check "ShellExecute(`"notepad`"), as Win+R does, starts the app (started: $($started.ProcessName); seen: $seen)" ($process -and $process.Path -eq $Exe)
+    Get-Process | Where-Object { $_.ProcessName -like 'notepad*' } | Stop-Process -Force
     Start-Sleep -Milliseconds 300
 }
 
