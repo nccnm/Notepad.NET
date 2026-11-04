@@ -31,7 +31,7 @@ Cấu hình được tắt khi gỡ app, hoặc khi chạy lại trình cài mà
 
 Giới hạn:
 
-- Shell chỉ được thêm profile khi đọc được policy `RemoteSigned`, `Unrestricted` hoặc `Bypass`, vì profile không ký sẽ báo lỗi mỗi lần shell khởi động với `Restricted` hoặc `AllSigned`. Dưới `Restricted`, chính `Get-ExecutionPolicy` có thể lỗi vì không tải được module của nó, nên không đọc được policy cũng tính là không được phép. Windows PowerShell trên Windows client mặc định là `Restricted`, nên ở đó `notepad` vẫn mở Notepad của Windows cho tới khi người dùng đổi policy và chạy lại trình cài. Lý do được ghi trong `notepad-command.log` ở thư mục cài.
+- Shell chỉ được thêm profile khi đọc được policy `RemoteSigned`, `Unrestricted` hoặc `Bypass`, vì profile không ký sẽ báo lỗi mỗi lần shell khởi động với `Restricted` hoặc `AllSigned`. Không đọc được policy cũng tính là không được phép. Script đọc policy với `PSModulePath` rỗng, vì trình cài chạy từ PowerShell 7 truyền đường dẫn module của bản đó xuống và Windows PowerShell không tải được module của `Get-ExecutionPolicy`. Windows PowerShell trên Windows client mặc định là `Restricted`, nên ở đó `notepad` vẫn mở Notepad của Windows cho tới khi người dùng đổi policy và chạy lại trình cài. Lý do được ghi trong `notepad-command.log` ở thư mục cài.
 - Cửa sổ PowerShell và cmd đang mở chỉ nhận cấu hình mới khi mở lại.
 - Chương trình gọi thẳng đường dẫn đầy đủ của `notepad.exe` vẫn mở Notepad của Windows.
 - `App Paths` có tác dụng với Win+R trên Windows 11 (đã chạy `ShellExecute("notepad")` trên máy phát triển, 2026-11-04). Trên Windows Server 2025 của máy CI, cùng lệnh đó vẫn mở `System32\notepad.exe` dù khóa đã đúng, nên CI chỉ kiểm tra giá trị của khóa. Lý do khác nhau giữa hai bản Windows chưa được xác minh.

@@ -56,13 +56,27 @@ function Show-SetupLog {
     Select-String -LiteralPath "$env:RUNNER_TEMP\setup.log" -Pattern 'Tasks|Filename:|powershell|exit code|Process exit' | ForEach-Object { "  setup: $($_.Line)" }
 }
 
+# With a loaded profile, as a user gets it, and the module paths of that shell and not of this one.
+function Get-Definition($shell) {
+    $inherited = $env:PSModulePath
+    $env:PSModulePath = $null
+    try {
+        (& $shell -NonInteractive -Command '(Get-Command notepad).CommandType; (Get-Command notepad).Definition' 2>&1 | Out-String).Trim()
+    }
+    finally {
+        $env:PSModulePath = $inherited
+    }
+}
+
 function Expect-Enabled {
     Check 'App Paths points at the app' ((AppPathDefault) -eq $Exe -and (AppPathFolder) -eq $InstallDir)
     Check 'AutoRun has the macro' ((AutoRun) -like "doskey notepad=*Notepad.NET.exe*")
     if (Get-Command pwsh -ErrorAction SilentlyContinue) {
-        $definition = (pwsh -NonInteractive -Command '(Get-Command notepad).CommandType; (Get-Command notepad).Definition' | Out-String).Trim()
+        $definition = Get-Definition 'pwsh'
         Check "pwsh takes the function ($definition)" ($definition -like "Function*Notepad.NET.exe*")
     }
+
+    Check 'Windows PowerShell takes the function' ((Get-Definition 'powershell.exe') -like 'Function*Notepad.NET.exe*')
 
     $macros = (cmd /c 'doskey /macros' | Out-String).Trim()
     Check "a new cmd has the macro ($macros)" ($macros -like 'notepad=*Notepad.NET.exe*')
@@ -144,7 +158,10 @@ New-Item $policyKey -Force | Out-Null
 Set-ItemProperty $policyKey ExecutionPolicy Restricted
 Install 'notepadcommand'
 Check 'no Windows PowerShell profile that would print an error' ((Hash $Profile5) -eq 'none')
-Check 'the reason is in the log' ((Get-Content -LiteralPath (Join-Path $InstallDir 'notepad-command.log') -Raw) -like '*powershell.exe is missing or may not run profiles*')
+$log = Get-Content -LiteralPath (Join-Path $InstallDir 'notepad-command.log') -Raw
+Check 'the policy was read' ($log -like '*powershell.exe execution policy: Restricted*')
+Check 'the reason is in the log' ($log -like '*powershell.exe is missing or may not run profiles*')
+Check 'Windows PowerShell starts without an error about its profile' ((Get-Definition 'powershell.exe') -like 'Application*notepad.exe*')
 Uninstall
 Check 'the install folder is gone' (-not (Test-Path -LiteralPath $InstallDir))
 Remove-ItemProperty $policyKey ExecutionPolicy
